@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quantum JH — Gestão de Estoque</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:        #0f1117;
+      --surface:   #181c27;
+      --surface2:  #1e2333;
+      --border:    rgba(255,255,255,0.07);
+      --border2:   rgba(255,255,255,0.13);
+      --text:      #e8eaf0;
+      --muted:     #7a8099;
+      --accent:    #4f7fff;
+      --accent-d:  #3563e9;
+      --accent-bg: rgba(79,127,255,0.10);
+      --green:     #30c97e;
+      --green-bg:  rgba(48,201,126,0.10);
+      --amber:     #f5a623;
+      --amber-bg:  rgba(245,166,35,0.10);
+      --red:       #f05252;
+      --red-bg:    rgba(240,82,82,0.10);
+      --radius:    10px;
+      --radius-lg: 14px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.4);
+    }
+    body { font-family:'DM Sans',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; font-size:14px; }
+    .app { max-width:1100px; margin:0 auto; padding:28px 20px 60px; }
+
+    /* SYNC */
+    .sync-badge { display:inline-flex; align-items:center; gap:6px; font-size:11px; padding:4px 10px; border-radius:20px; transition:all 0.3s; border:1px solid transparent; }
+    .sync-badge.online     { background:var(--green-bg); color:var(--green); border-color:rgba(48,201,126,0.25); }
+    .sync-badge.loading    { background:var(--amber-bg); color:var(--amber); border-color:rgba(245,166,35,0.25); }
+    .sync-badge.error      { background:var(--red-bg);   color:var(--red);   border-color:rgba(240,82,82,0.25); }
+    .sync-dot { width:6px; height:6px; border-radius:50%; background:currentColor; flex-shrink:0; animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+    /* HEADER */
+    .header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:28px; flex-wrap:wrap; gap:14px; }
+    .brand  { display:flex; align-items:center; gap:12px; }
+    .brand-logo { width:42px; height:42px; background:var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:700; color:#fff; letter-spacing:-0.5px; flex-shrink:0; }
+    .brand-name { font-size:19px; font-weight:600; letter-spacing:-0.3px; }
+    .brand-sub  { font-size:11px; color:var(--muted); margin-top:2px; }
+    .header-right { display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+    .header-date  { font-size:12px; color:var(--muted); }
+    .header-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+
+    /* BOTÕES */
+    .btn { display:inline-flex; align-items:center; gap:6px; height:36px; padding:0 16px; border-radius:var(--radius); border:1px solid var(--border2); background:var(--surface2); color:var(--text); font-family:inherit; font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap; transition:background 0.15s,border-color 0.15s,transform 0.1s; }
+    .btn:hover  { background:var(--surface); border-color:rgba(255,255,255,0.2); }
+    .btn:active { transform:scale(0.98); }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .btn.primary:hover { background:var(--accent-d); border-color:var(--accent-d); }
+    .btn.success { background:var(--green-bg); border-color:rgba(48,201,126,0.3); color:var(--green); }
+    .btn.success:hover { background:rgba(48,201,126,0.18); }
+    .btn.danger  { background:var(--red-bg); border-color:rgba(240,82,82,0.3); color:var(--red); }
+    .btn.danger:hover  { background:rgba(240,82,82,0.18); }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+    /* KPIs */
+    .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:24px; }
+    .kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px 20px; position:relative; overflow:hidden; }
+    .kpi::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--kpi-color,var(--accent)); }
+    .kpi-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px; }
+    .kpi-value { font-size:26px; font-weight:600; letter-spacing:-0.5px; color:var(--kpi-color,var(--text)); }
+    .kpi-sub   { font-size:11px; color:var(--muted); margin-top:4px; }
+
+    /* TOOLBAR */
+    .toolbar { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+    .toolbar input[type=text] { flex:1; min-width:180px; height:36px; padding:0 12px; background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-family:inherit; font-size:13px; }
+    .toolbar input[type=text]::placeholder { color:var(--muted); }
+    .toolbar input[type=text]:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-bg); }
+    .toolbar select { height:36px; padding:0 12px; background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-family:inherit; font-size:13px; }
+
+    /* TABELA */
+    .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+    .table-scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; min-width:580px; }
+    thead th { background:var(--surface2); font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); padding:11px 16px; text-align:left; border-bottom:1px solid var(--border); }
+    tbody td  { padding:13px 16px; border-bottom:1px solid var(--border); font-size:13px; vertical-align:middle; }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover td { background:rgba(255,255,255,0.02); }
+    .prod-name { font-weight:500; }
+    .prod-cat  { font-size:11px; color:var(--muted); margin-top:2px; }
+    .qty-num   { font-family:'DM Mono',monospace; font-size:15px; font-weight:500; }
+    .table-footer { padding:10px 16px; font-size:11px; color:var(--muted); border-top:1px solid var(--border); text-align:right; }
+    .empty-row td { text-align:center; padding:40px; color:var(--muted); font-size:13px; }
+
+    /* BADGES */
+    .badge { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:500; }
+    .badge::before { content:''; width:6px; height:6px; border-radius:50%; flex-shrink:0; background:currentColor; }
+    .badge.ok  { background:var(--green-bg); color:var(--green); }
+    .badge.low { background:var(--amber-bg); color:var(--amber); }
+    .badge.out { background:var(--red-bg);   color:var(--red); }
+
+    /* AÇÕES */
+    .action-btns { display:flex; gap:6px; }
+    .icon-btn { width:30px; height:30px; border-radius:8px; border:1px solid var(--border2); background:transparent; color:var(--muted); cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:background 0.15s,color 0.15s,border-color 0.15s; }
+    .icon-btn:hover     { background:var(--surface2); color:var(--text); border-color:rgba(255,255,255,0.2); }
+    .icon-btn.del:hover { background:var(--red-bg);    color:var(--red);    border-color:rgba(240,82,82,0.3); }
+    .icon-btn.mov:hover { background:var(--accent-bg); color:var(--accent); border-color:rgba(79,127,255,0.3); }
+
+    /* LOADING */
+    #loadingOverlay { position:fixed; inset:0; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; z-index:999; }
+    .spinner { width:36px; height:36px; border:3px solid var(--border2); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    #loadingOverlay p { color:var(--muted); font-size:13px; }
+
+    /* SETUP BANNER */
+    #setupBanner { display:none; background:var(--amber-bg); border:1px solid rgba(245,166,35,0.3); border-radius:var(--radius-lg); padding:20px 24px; margin-bottom:24px; }
+    #setupBanner h3 { font-size:14px; font-weight:600; color:var(--amber); margin-bottom:8px; }
+    #setupBanner p  { font-size:13px; color:var(--muted); line-height:1.6; }
+    #setupBanner input { width:100%; height:38px; padding:0 12px; margin-top:12px; background:var(--surface2); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-family:'DM Mono',monospace; font-size:12px; }
+    #setupBanner input:focus { outline:none; border-color:var(--accent); }
+
+    /* MODAIS */
+    .modal-bg { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:200; align-items:center; justify-content:center; padding:16px; backdrop-filter:blur(3px); }
+    .modal-bg.open { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--border2); border-radius:var(--radius-lg); padding:28px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow); animation:slideUp 0.18s ease; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+    .modal h2 { font-size:17px; font-weight:600; margin-bottom:22px; }
+    .form-group { margin-bottom:14px; }
+    .form-group label { display:block; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+    .form-group input, .form-group select { width:100%; height:38px; padding:0 12px; background:var(--surface2); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-family:inherit; font-size:13px; }
+    .form-group input:focus, .form-group select:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-bg); }
+    .form-group input[readonly] { opacity:0.6; cursor:default; }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top:22px; padding-top:18px; border-top:1px solid var(--border); }
+
+    /* EXPORT */
+    .export-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:18px; }
+    .export-card { border:1px solid var(--border2); border-radius:var(--radius); padding:14px; cursor:pointer; transition:border-color 0.15s,background 0.15s; }
+    .export-card:hover,.export-card.sel { border-color:var(--accent); background:var(--accent-bg); }
+    .export-card .ec-title { font-size:13px; font-weight:500; }
+    .export-card .ec-desc  { font-size:11px; color:var(--muted); margin-top:3px; }
+    .date-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
+    .date-row select { height:36px; padding:0 10px; flex:1; min-width:90px; background:var(--surface2); border:1px solid var(--border2); border-radius:var(--radius); color:var(--text); font-family:inherit; font-size:13px; }
+
+    /* HISTÓRICO */
+    .section-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); margin-bottom:10px; }
+    .hist-list { max-height:190px; overflow-y:auto; }
+    .hist-item { display:flex; justify-content:space-between; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--border); gap:10px; }
+    .hist-item:last-child { border-bottom:none; }
+    .hist-type { font-size:12px; font-weight:500; }
+    .hist-obs  { font-size:11px; color:var(--muted); margin-top:2px; }
+    .hist-date { font-size:11px; color:var(--muted); white-space:nowrap; font-family:'DM Mono',monospace; }
+    .hist-in   { color:var(--green); }
+    .hist-out  { color:var(--red); }
+    .hist-adj  { color:var(--amber); }
+
+    /* MOBILE */
+    @media (max-width:600px) {
+      .app { padding:16px 12px 50px; }
+      thead th:nth-child(4),tbody td:nth-child(4),
+      thead th:nth-child(5),tbody td:nth-child(5) { display:none; }
+      .kpi-grid { grid-template-columns:1fr 1fr; }
+      .kpi-value { font-size:20px; }
+      .form-row { grid-template-columns:1fr; }
+      .export-grid { grid-template-columns:1fr; }
+      .modal { padding:20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loadingOverlay">
+  <div style="width:48px;height:48px;background:#4f7fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff;">QJ</div>
+  <div class="spinner"></div>
+  <p id="loadingMsg">Carregando dados...</p>
+</div>
+
+<div class="app" id="mainApp" style="display:none;">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-logo">QJ</div>
+      <div>
+        <div class="brand-name">Quantum JH</div>
+        <div class="brand-sub">Gestão de Estoque</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end;">
+        <span class="sync-badge loading" id="syncBadge"><span class="sync-dot"></span><span id="syncText">Carregando...</span></span>
+        <span class="header-date" id="currentDate"></span>
+      </div>
+      <div class="header-actions">
+        <button class="btn" onclick="loadData()" title="Atualizar dados">&#8635; Atualizar</button>
+        <button class="btn success" onclick="openExport()">&#8595; Exportar PDF</button>
+        <button class="btn primary" onclick="openAdd()">+ Novo produto</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETUP BANNER -->
+  <div id="setupBanner">
+    <h3>⚠ URL do Google Apps Script não configurada</h3>
+    <p>Cole abaixo a URL gerada ao implantar o Apps Script. Ela será salva automaticamente neste navegador.</p>
+    <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/SEU_ID/exec">
+    <div style="margin-top:10px;display:flex;gap:8px;">
+      <button class="btn primary" onclick="saveScriptUrl()">Salvar e conectar</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid" id="kpis"></div>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <input type="text" id="search" placeholder="Buscar produto ou categoria..." oninput="renderTable()">
+    <select id="filterStatus" onchange="renderTable()">
+      <option value="">Todos os status</option>
+      <option value="ok">Em estoque</option>
+      <option value="low">Estoque baixo</option>
+      <option value="out">Sem estoque</option>
+    </select>
+  </div>
+
+  <!-- TABELA -->
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32%">Produto</th>
+            <th style="width:12%;text-align:center">Qtd.</th>
+            <th style="width:12%;text-align:center">Mínimo</th>
+            <th style="width:16%">Custo unit.</th>
+            <th style="width:14%">Status</th>
+            <th style="width:14%">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="table-footer" id="tableCount"></div>
+  </div>
+
+</div>
+
+<!-- MODAL PRODUTO -->
+<div class="modal-bg" id="prodModal">
+  <div class="modal">
+    <h2 id="prodModalTitle">Novo produto</h2>
+    <div class="form-group"><label>Nome do produto</label><input type="text" id="fName" placeholder="Ex: Motor Elétrico"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Quantidade atual</label><input type="number" id="fQty" min="0" value="0"></div>
+      <div class="form-group"><label>Estoque mínimo</label><input type="number" id="fMin" min="0" value="5"></div>
+    </div>
+    <div class="form-group"><label>Custo unitário (R$)</label><input type="number" id="fCost" min="0" step="0.01" value="0.00"></div>
+    <div class="form-group"><label>Categoria</label><input type="text" id="fCat" placeholder="Ex: Mecânica, Elétrica..."></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('prodModal')">Cancelar</button>
+      <button class="btn primary" id="btnSaveProd" onclick="saveProd()">Salvar produto</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOVIMENTAÇÃO -->
+<div class="modal-bg" id="movModal">
+  <div class="modal">
+    <h2 id="movTitle">Movimentar estoque</h2>
+    <div class="form-group"><label>Produto</label><input type="text" id="movProdName" readonly></div>
+    <div class="form-row">
+      <div class="form-group"><label>Tipo</label>
+        <select id="movType">
+          <option value="in">Entrada</option>
+          <option value="out">Saída</option>
+          <option value="adj">Ajuste (definir qtd.)</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Quantidade</label><input type="number" id="movQty" min="1" value="1"></div>
+    </div>
+    <div class="form-group"><label>Observação (opcional)</label><input type="text" id="movObs" placeholder="Ex: Compra, Uso em manutenção..."></div>
+    <div style="margin-bottom:4px;">
+      <div class="section-label">Histórico recente</div>
+      <div class="hist-list" id="histList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('movModal')">Fechar</button>
+      <button class="btn primary" id="btnSaveMov" onclick="saveMovement()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXPORTAR -->
+<div class="modal-bg" id="exportModal">
+  <div class="modal">
+    <h2>Exportar relatório</h2>
+    <div class="section-label" style="margin-bottom:10px;">Período</div>
+    <div class="export-grid">
+      <div class="export-card sel" id="ec-week"  onclick="selExport('week')"><div class="ec-title">Por semana</div><div class="ec-desc">Ano, mês e semana</div></div>
+      <div class="export-card"    id="ec-month" onclick="selExport('month')"><div class="ec-title">Por mês</div><div class="ec-desc">Ano e mês</div></div>
+      <div class="export-card"    id="ec-year"  onclick="selExport('year')"><div class="ec-title">Por ano</div><div class="ec-desc">Todo o ano</div></div>
+      <div class="export-card"    id="ec-all"   onclick="selExport('all')"><div class="ec-title">Completo</div><div class="ec-desc">Todo o histórico</div></div>
+    </div>
+    <div class="date-row" id="exportDateRow">
+      <select id="expYear"></select>
+      <select id="expMonth"></select>
+      <select id="expWeek" style="display:none;"></select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('exportModal')">Cancelar</button>
+      <button class="btn primary" onclick="doExport()">Gerar PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EXCLUIR -->
+<div class="modal-bg" id="delModal">
+  <div class="modal" style="max-width:360px;">
+    <h2>Excluir produto</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:6px;">Tem certeza que deseja excluir <strong id="delName" style="color:var(--text);"></strong>?</p>
+    <p style="color:var(--muted);font-size:12px;">Esta ação não pode ser desfeita.</p>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('delModal')">Cancelar</button>
+      <button class="btn danger" id="btnConfirmDel" onclick="confirmDel()">Excluir produto</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ══════════════════════════════════════════════════════════════
+  //  CONFIGURAÇÃO — Cole aqui a URL do seu Google Apps Script
+  //  OU deixe vazio: o sistema vai pedir ao abrir pela primeira vez
+  // ══════════════════════════════════════════════════════════════
+  const SCRIPT_URL_HARDCODED = "";
+  // ══════════════════════════════════════════════════════════════
+
+  const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  let products  = [];
+  let movements = [];
+  let editId    = null;
+  let delId     = null;
+  let movProdId = null;
+  let exportType = 'week';
+
+  // ── URL do script (hardcoded ou salva no localStorage) ────────
+  function getScriptUrl() {
+    return SCRIPT_URL_HARDCODED || localStorage.getItem("qjh_script_url") || "";
+  }
+  function saveScriptUrl() {
+    const url = document.getElementById("scriptUrlInput").value.trim();
+    if (!url.startsWith("https://script.google.com")) {
+      alert("URL inválida. Cole a URL completa do Apps Script."); return;
+    }
+    localStorage.setItem("qjh_script_url", url);
+    document.getElementById("setupBanner").style.display = "none";
+    loadData();
+  }
+
+  // ── API ───────────────────────────────────────────────────────
+  async function api(params) {
+    const url = getScriptUrl();
+    if (!url) return null;
+    const qs  = new URLSearchParams(params).toString();
+    const res = await fetch(`${url}?${qs}`);
+    return res.json();
+  }
+  async function apiPost(body) {
+    const url = getScriptUrl();
+    if (!url) return null;
+    const res = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(body)
+    });
+    return res.json();
+  }
+
+  // ── Carrega dados ─────────────────────────────────────────────
+  async function loadData() {
+    setSyncStatus("loading", "Carregando...");
+    try {
+      const data = await api({ action: "getAll" });
+      if (!data || data.error) throw new Error(data?.error || "Erro");
+      products  = data.products  || [];
+      movements = data.movements || [];
+      setSyncStatus("online", "Sincronizado");
+      render();
+    } catch(e) {
+      setSyncStatus("error", "Erro ao carregar");
+      console.error(e);
+    }
+  }
+
+  function setSyncStatus(state, text) {
+    const b = document.getElementById("syncBadge");
+    const t = document.getElementById("syncText");
+    b.className = `sync-badge ${state}`;
+    t.textContent = text;
+  }
+
+  // ── Status ────────────────────────────────────────────────────
+  function getStatus(p) {
+    const qty = Number(p.qty) || 0;
+    const min = Number(p.min) || 0;
+    if (qty === 0)   return "out";
+    if (qty <= min)  return "low";
+    return "ok";
+  }
+  function statusLabel(s) {
+    return { ok:"Em estoque", low:"Estoque baixo", out:"Sem estoque" }[s];
+  }
+
+  // ── Render ────────────────────────────────────────────────────
+  function renderKPIs() {
+    const val = products.reduce((a,p) => a + (Number(p.qty)||0)*(Number(p.cost)||0), 0);
+    const low = products.filter(p => getStatus(p)==="low").length;
+    const out = products.filter(p => getStatus(p)==="out").length;
+    document.getElementById("kpis").innerHTML = `
+      <div class="kpi" style="--kpi-color:var(--accent)">
+        <div class="kpi-label">Produtos cadastrados</div>
+        <div class="kpi-value">${products.length}</div>
+        <div class="kpi-sub">itens no sistema</div>
+      </div>
+      <div class="kpi" style="--kpi-color:var(--green)">
+        <div class="kpi-label">Valor em estoque</div>
+        <div class="kpi-value" style="font-size:20px;">R$&nbsp;${val.toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        <div class="kpi-sub">custo total</div>
+      </div>
+      <div class="kpi" style="--kpi-color:var(--amber)">
+        <div class="kpi-label">Estoque baixo</div>
+        <div class="kpi-value">${low}</div>
+        <div class="kpi-sub">produto(s) em alerta</div>
+      </div>
+      <div class="kpi" style="--kpi-color:var(--red)">
+        <div class="kpi-label">Sem estoque</div>
+        <div class="kpi-value">${out}</div>
+        <div class="kpi-sub">produto(s) zerado(s)</div>
+      </div>`;
+  }
+
+  function renderTable() {
+    const q  = (document.getElementById("search")?.value||"").toLowerCase();
+    const fs = document.getElementById("filterStatus")?.value||"";
+    const rows = products.filter(p => {
+      const mq = p.name.toLowerCase().includes(q)||(p.cat||"").toLowerCase().includes(q);
+      const ms = !fs || getStatus(p)===fs;
+      return mq && ms;
+    });
+    const tb = document.getElementById("tableBody");
+    if (!tb) return;
+    if (!rows.length) {
+      tb.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhum produto encontrado</td></tr>`;
+    } else {
+      tb.innerHTML = rows.map(p => {
+        const s = getStatus(p);
+        return `<tr>
+          <td><div class="prod-name">${p.name}</div><div class="prod-cat">${p.cat||"—"}</div></td>
+          <td style="text-align:center;"><span class="qty-num">${Number(p.qty)||0}</span></td>
+          <td style="text-align:center;color:var(--muted);">${Number(p.min)||0}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px;">R$&nbsp;${(Number(p.cost)||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}</td>
+          <td><span class="badge ${s}">${statusLabel(s)}</span></td>
+          <td><div class="action-btns">
+            <button class="icon-btn mov" title="Movimentar" onclick="openMov('${p.id}')">&#8645;</button>
+            <button class="icon-btn"     title="Editar"     onclick="openEdit('${p.id}')">&#9998;</button>
+            <button class="icon-btn del" title="Excluir"    onclick="openDel('${p.id}')">&#10005;</button>
+          </div></td>
+        </tr>`;
+      }).join("");
+    }
+    document.getElementById("tableCount").textContent =
+      `${rows.length} de ${products.length} produto(s) exibido(s)`;
+  }
+
+  function render() { renderKPIs(); renderTable(); }
+
+  // ── Modal Produto ─────────────────────────────────────────────
+  function openAdd() {
+    editId = null;
+    document.getElementById("prodModalTitle").textContent = "Novo produto";
+    document.getElementById("fName").value  = "";
+    document.getElementById("fQty").value   = 0;
+    document.getElementById("fMin").value   = 5;
+    document.getElementById("fCost").value  = "0.00";
+    document.getElementById("fCat").value   = "";
+    openModal("prodModal");
+  }
+  function openEdit(id) {
+    editId = id;
+    const p = products.find(x=>x.id===id); if(!p) return;
+    document.getElementById("prodModalTitle").textContent = "Editar produto";
+    document.getElementById("fName").value  = p.name;
+    document.getElementById("fQty").value   = p.qty;
+    document.getElementById("fMin").value   = p.min;
+    document.getElementById("fCost").value  = (Number(p.cost)||0).toFixed(2);
+    document.getElementById("fCat").value   = p.cat||"";
+    openModal("prodModal");
+  }
+  async function saveProd() {
+    const name = document.getElementById("fName").value.trim();
+    if (!name) { alert("Informe o nome do produto."); return; }
+    const qty  = parseInt(document.getElementById("fQty").value)||0;
+    const min  = parseInt(document.getElementById("fMin").value)||0;
+    const cost = parseFloat(document.getElementById("fCost").value)||0;
+    const cat  = document.getElementById("fCat").value.trim();
+    const btn  = document.getElementById("btnSaveProd");
+    btn.disabled=true; btn.textContent="Salvando...";
+    const res = await apiPost({ action:"saveProduct", id:editId||null, name, qty, min, cost, cat });
+    btn.disabled=false; btn.textContent="Salvar produto";
+    if(res?.ok) { closeModal("prodModal"); await loadData(); }
+    else alert("Erro ao salvar: " + (res?.error||"tente novamente"));
+  }
+
+  // ── Modal Movimentação ────────────────────────────────────────
+  function openMov(id) {
+    movProdId = id;
+    const p = products.find(x=>x.id===id); if(!p) return;
+    document.getElementById("movTitle").textContent  = `Movimentar — ${p.name}`;
+    document.getElementById("movProdName").value     = p.name;
+    document.getElementById("movQty").value          = 1;
+    document.getElementById("movObs").value          = "";
+    document.getElementById("movType").value         = "in";
+    renderHist(id);
+    openModal("movModal");
+  }
+  function renderHist(id) {
+    const items = movements.filter(m=>m.prodId===id).slice(-8).reverse();
+    const el = document.getElementById("histList"); if(!el) return;
+    if(!items.length){ el.innerHTML=`<div style="font-size:12px;color:var(--muted);padding:12px 0;">Sem movimentações registradas.</div>`; return; }
+    el.innerHTML = items.map(m => {
+      const sign = m.type==="in"?"+":m.type==="out"?"−":"~";
+      const cls  = m.type==="in"?"hist-in":m.type==="out"?"hist-out":"hist-adj";
+      const lbl  = m.type==="in"?"Entrada":m.type==="out"?"Saída":"Ajuste";
+      let ds = "—";
+      if(m.date){ const d=new Date(m.date); ds=`${d.getDate().toString().padStart(2,"0")}/${(d.getMonth()+1).toString().padStart(2,"0")} ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`; }
+      return `<div class="hist-item">
+        <div><div class="hist-type ${cls}">${sign}${Math.abs(Number(m.qty)||0)} — ${lbl}</div>${m.obs?`<div class="hist-obs">${m.obs}</div>`:""}</div>
+        <div class="hist-date">${ds}</div>
+      </div>`;
+    }).join("");
+  }
+  async function saveMovement() {
+    const type = document.getElementById("movType").value;
+    const qty  = parseInt(document.getElementById("movQty").value)||0;
+    const obs  = document.getElementById("movObs").value.trim();
+    if(qty<=0){ alert("Informe uma quantidade válida."); return; }
+    const p = products.find(x=>x.id===movProdId); if(!p) return;
+    const pQty = Number(p.qty)||0;
+    if(type==="out"&&pQty<qty){ alert("Quantidade insuficiente em estoque."); return; }
+    const newQty = type==="in"?pQty+qty:type==="out"?pQty-qty:qty;
+    const btn = document.getElementById("btnSaveMov");
+    btn.disabled=true; btn.textContent="Registrando...";
+    const res = await apiPost({ action:"addMovement", prodId:movProdId, type, qty, obs, newQty });
+    btn.disabled=false; btn.textContent="Registrar";
+    if(res?.ok){ await loadData(); renderHist(movProdId); }
+    else alert("Erro ao registrar: " + (res?.error||"tente novamente"));
+  }
+
+  // ── Modal Excluir ─────────────────────────────────────────────
+  function openDel(id) {
+    delId = id;
+    const p = products.find(x=>x.id===id);
+    document.getElementById("delName").textContent = p?.name||"";
+    openModal("delModal");
+  }
+  async function confirmDel() {
+    const btn = document.getElementById("btnConfirmDel");
+    btn.disabled=true; btn.textContent="Excluindo...";
+    const res = await apiPost({ action:"deleteProduct", id:delId });
+    btn.disabled=false; btn.textContent="Excluir produto";
+    if(res?.ok){ closeModal("delModal"); await loadData(); }
+    else alert("Erro ao excluir: " + (res?.error||"tente novamente"));
+  }
+
+  // ── Exportar PDF ──────────────────────────────────────────────
+  function openExport() {
+    populateExportDates();
+    exportType="week";
+    ["week","month","year","all"].forEach(t=>document.getElementById("ec-"+t).classList.remove("sel"));
+    document.getElementById("ec-week").classList.add("sel");
+    updateExportFields();
+    openModal("exportModal");
+  }
+  function selExport(t) {
+    exportType=t;
+    ["week","month","year","all"].forEach(x=>document.getElementById("ec-"+x).classList.remove("sel"));
+    document.getElementById("ec-"+t).classList.add("sel");
+    updateExportFields();
+  }
+  function populateExportDates() {
+    const now=new Date();
+    const yr=document.getElementById("expYear"); yr.innerHTML="";
+    for(let y=now.getFullYear();y>=now.getFullYear()-4;y--) yr.innerHTML+=`<option value="${y}">${y}</option>`;
+    const mo=document.getElementById("expMonth"); mo.innerHTML="";
+    MONTHS.forEach((m,i)=>mo.innerHTML+=`<option value="${i+1}"${i===now.getMonth()?" selected":""}>${m}</option>`);
+    populateWeeks();
+    yr.onchange=mo.onchange=populateWeeks;
+  }
+  function populateWeeks() {
+    const yr=parseInt(document.getElementById("expYear").value);
+    const mo=parseInt(document.getElementById("expMonth").value);
+    const wk=document.getElementById("expWeek"); wk.innerHTML="";
+    const d=new Date(yr,mo-1,1); let w=1;
+    while(d.getMonth()===mo-1){
+      const end=new Date(d); end.setDate(end.getDate()+6);
+      if(end.getMonth()!==mo-1) end.setDate(new Date(yr,mo,0).getDate());
+      wk.innerHTML+=`<option value="${w}">Semana ${w} (${d.getDate().toString().padStart(2,"0")}/${mo.toString().padStart(2,"0")} – ${end.getDate().toString().padStart(2,"0")}/${mo.toString().padStart(2,"0")})</option>`;
+      d.setDate(d.getDate()+7); w++;
+    }
+  }
+  function updateExportFields() {
+    const row=document.getElementById("exportDateRow");
+    if(exportType==="all"){row.style.display="none";return;}
+    row.style.display="flex";
+    document.getElementById("expYear").style.display="block";
+    document.getElementById("expMonth").style.display=exportType==="year"?"none":"block";
+    document.getElementById("expWeek").style.display=exportType==="week"?"block":"none";
+  }
+  function doExport() {
+    const yr=parseInt(document.getElementById("expYear").value);
+    const mo=parseInt(document.getElementById("expMonth").value);
+    const wkIdx=parseInt(document.getElementById("expWeek").value)||1;
+    const now=new Date(); let title="", fm=movements;
+    if(exportType==="week"){
+      const ws=new Date(yr,mo-1,1+(wkIdx-1)*7); const we=new Date(ws); we.setDate(we.getDate()+6);
+      title=`Semana ${wkIdx} — ${MONTHS[mo-1]} ${yr}`;
+      fm=movements.filter(m=>{const d=new Date(m.date);return d>=ws&&d<=we;});
+    } else if(exportType==="month"){
+      title=`${MONTHS[mo-1]} ${yr}`;
+      fm=movements.filter(m=>{const d=new Date(m.date);return d.getFullYear()===yr&&d.getMonth()===mo-1;});
+    } else if(exportType==="year"){
+      title=`Ano ${yr}`;
+      fm=movements.filter(m=>new Date(m.date).getFullYear()===yr);
+    } else { title="Relatório completo"; }
+
+    const val=products.reduce((a,p)=>a+(Number(p.qty)||0)*(Number(p.cost)||0),0);
+    const ms={};
+    fm.forEach(m=>{if(!ms[m.prodId])ms[m.prodId]={in:0,out:0};if(m.type==="in")ms[m.prodId].in+=Number(m.qty)||0;if(m.type==="out")ms[m.prodId].out+=Number(m.qty)||0;});
+
+    const rows=products.map(p=>{
+      const s=getStatus(p); const mv=ms[p.id]||{in:0,out:0};
+      const bg=s==="ok"?"#e6f7ef":s==="low"?"#fef3e2":"#fdecea";
+      const fg=s==="ok"?"#1a7f4e":s==="low"?"#92540a":"#9b2626";
+      return `<tr style="border-bottom:1px solid #eee;">
+        <td style="padding:9px 12px;font-weight:500;">${p.name}</td>
+        <td style="padding:9px 12px;color:#666;">${p.cat||"—"}</td>
+        <td style="padding:9px 12px;text-align:center;font-weight:600;">${Number(p.qty)||0}</td>
+        <td style="padding:9px 12px;text-align:center;color:#999;">${Number(p.min)||0}</td>
+        <td style="padding:9px 12px;text-align:right;font-family:monospace;">R$ ${(Number(p.cost)||0).toLocaleString("pt-BR",{minimumFractionDigits:2})}</td>
+        <td style="padding:9px 12px;text-align:right;font-family:monospace;font-weight:600;">R$ ${((Number(p.qty)||0)*(Number(p.cost)||0)).toLocaleString("pt-BR",{minimumFractionDigits:2})}</td>
+        <td style="padding:9px 12px;text-align:center;color:#1a7f4e;font-weight:500;">+${mv.in}</td>
+        <td style="padding:9px 12px;text-align:center;color:#9b2626;font-weight:500;">&#8722;${mv.out}</td>
+        <td style="padding:9px 12px;"><span style="background:${bg};color:${fg};padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;">${statusLabel(s)}</span></td>
+      </tr>`;
+    }).join("");
+
+    const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>Quantum JH — Relatório</title>
+    <style>body{font-family:Arial,sans-serif;margin:40px;color:#1a1a2e;font-size:13px;}.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #4f7fff;}.logo{display:flex;align-items:center;gap:12px;}.logo-sq{width:40px;height:40px;background:#4f7fff;border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:16px;}.co-name{font-size:20px;font-weight:700;}.co-sub{font-size:12px;color:#888;margin-top:2px;}.rep-title{font-size:14px;font-weight:600;color:#4f7fff;}.rep-date{font-size:11px;color:#999;margin-top:4px;text-align:right;}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;}.kpi{background:#f7f8fc;border-radius:8px;padding:14px 16px;border-left:3px solid #4f7fff;}.kpi-l{font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#888;margin-bottom:6px;}.kpi-v{font-size:20px;font-weight:700;}table{width:100%;border-collapse:collapse;}th{background:#f0f2f8;font-size:10px;text-transform:uppercase;letter-spacing:0.06em;color:#888;padding:10px 12px;text-align:left;border-bottom:2px solid #e0e4f0;}.footer{margin-top:28px;font-size:11px;color:#bbb;border-top:1px solid #eee;padding-top:12px;display:flex;justify-content:space-between;}@media print{body{margin:20mm;}}</style>
+    </head><body>
+    <div class="header"><div class="logo"><div class="logo-sq">QJ</div><div><div class="co-name">Quantum JH</div><div class="co-sub">Relatório de Estoque</div></div></div><div><div class="rep-title">${title}</div><div class="rep-date">Gerado em ${now.toLocaleDateString("pt-BR")} às ${now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}</div></div></div>
+    <div class="kpis"><div class="kpi"><div class="kpi-l">Produtos</div><div class="kpi-v">${products.length}</div></div><div class="kpi" style="border-color:#30c97e;"><div class="kpi-l">Valor em estoque</div><div class="kpi-v" style="font-size:15px;">R$ ${val.toLocaleString("pt-BR",{minimumFractionDigits:2})}</div></div><div class="kpi" style="border-color:#f5a623;"><div class="kpi-l">Entradas</div><div class="kpi-v">${fm.filter(m=>m.type==="in").length}</div></div><div class="kpi" style="border-color:#f05252;"><div class="kpi-l">Saídas</div><div class="kpi-v">${fm.filter(m=>m.type==="out").length}</div></div></div>
+    <table><thead><tr><th>Produto</th><th>Categoria</th><th style="text-align:center">Qtd.</th><th style="text-align:center">Mín.</th><th style="text-align:right">Custo unit.</th><th style="text-align:right">Valor total</th><th style="text-align:center">Entradas</th><th style="text-align:center">Saídas</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="footer"><span>Quantum JH — Sistema de Gestão de Estoque</span><span>Total: ${products.length} produto(s) | R$ ${val.toLocaleString("pt-BR",{minimumFractionDigits:2})}</span></div>
+    <script>window.onload=()=>setTimeout(()=>window.print(),500);<\/script></body></html>`;
+
+    const w=window.open("","_blank");
+    if(w){w.document.write(html);w.document.close();}
+    closeModal("exportModal");
+  }
+
+  // ── Helpers ───────────────────────────────────────────────────
+  function openModal(id)  { document.getElementById(id).classList.add("open"); }
+  function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+  document.addEventListener("click", e => {
+    ["prodModal","movModal","exportModal","delModal"].forEach(id => {
+      if(e.target===document.getElementById(id)) closeModal(id);
+    });
+  });
+  document.addEventListener("keydown", e => {
+    if(e.key==="Escape") ["prodModal","movModal","exportModal","delModal"].forEach(closeModal);
+  });
+  document.getElementById("currentDate").textContent =
+    new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+
+  // ── Inicialização ─────────────────────────────────────────────
+  window.addEventListener("load", async () => {
+    document.getElementById("loadingOverlay").style.display = "none";
+    document.getElementById("mainApp").style.display = "block";
+
+    const url = getScriptUrl();
+    if (!url) {
+      document.getElementById("setupBanner").style.display = "block";
+      document.getElementById("scriptUrlInput").value = localStorage.getItem("qjh_script_url")||"";
+      setSyncStatus("error", "Não configurado");
+      render();
+    } else {
+      await loadData();
+    }
+  });
+</script>
+</body>
+</html>
