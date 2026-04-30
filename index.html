@@ -521,7 +521,10 @@ function supaFetch(path, opts) {
       'Content-Type': 'application/json',
       'Prefer': 'return=representation'
     }
-  }, opts || {})).then(function(r) { return r.json(); });
+  }, opts || {})).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' em ' + path);
+    return r.json();
+  });
 }
 
 // ── ESTADO ─────────────────────────────────────────────────────
@@ -578,9 +581,10 @@ function loadData() {
     render();
     document.getElementById('loadingOverlay').style.display = 'none';
   }).catch(function(e) {
+    console.error('Supabase error:', e);
     setSyncStatus('error', 'Erro de conexão');
     document.getElementById('loadingOverlay').style.display = 'none';
-    toast('Erro ao carregar dados', 'err');
+    toast('Erro ao carregar. Verifique as tabelas no Supabase.', 'err');
   });
 }
 
@@ -1031,6 +1035,10 @@ document.addEventListener('keydown',function(e){
 document.getElementById('currentDate').textContent = new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
 loadConfig();
 applyAllPrefs();
+// Esconde overlay após 8s mesmo se houver erro
+setTimeout(function() {
+  document.getElementById('loadingOverlay').style.display = 'none';
+}, 8000);
 setupRealtime();
 loadData();
 </script>
