@@ -411,6 +411,8 @@ canvas{display:block;width:100%!important}
         <div class="config-row"><div><div class="config-label">Total de produtos</div></div><span style="font-family:'DM Mono',monospace;color:var(--accent)" id="cfgTotalProd">--</span></div>
         <div class="config-row"><div><div class="config-label">Movimenta&ccedil;&otilde;es</div></div><span style="font-family:'DM Mono',monospace;color:var(--accent)" id="cfgTotalMovs">--</span></div>
         <div class="config-row"><div><div class="config-label">&Uacute;ltima atualiza&ccedil;&atilde;o</div></div><span style="color:var(--muted)" id="cfgLastSync">--</span></div>
+        <div class="config-row"><div><div class="config-label">ID do banco</div><div class="config-desc">Identificador do armazenamento JSONBin</div></div><span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:11px" id="cfgBinId">--</span></div>
+        <div class="config-row"><div><div class="config-label">Redefinir banco de dados</div><div class="config-desc">Cria um novo banco e migra todos os dados</div></div><button class="btn danger" onclick="resetBin()" style="height:32px;font-size:12px">&#8635; Recriar banco</button></div>
       </div>
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
         <button class="btn" onclick="loadData()">&#8635; Recarregar</button>
@@ -502,26 +504,50 @@ function uid(){return 'xxxx-xxxx-xxxx'.replace(/x/g,function(){return Math.rando
 
 // ── API JSONBIN ────────────────────────────────────────────────
 function binFetch(method, path, body){
-  var opts = {
-    method: method,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Master-Key': BIN_KEY,
-      'X-Bin-Versioning': 'false'
-    }
+  var headers = {
+    'Content-Type': 'application/json',
+    'X-Master-Key': BIN_KEY,
+    'X-Access-Key': BIN_KEY,
+    'X-Bin-Versioning': 'false',
+    'X-Bin-Private': 'false'
   };
+  var opts = { method: method, headers: headers };
   if(body) opts.body = JSON.stringify(body);
   return fetch(BIN_BASE + path, opts).then(function(r){
-    if(!r.ok) return r.text().then(function(t){throw new Error('HTTP '+r.status+': '+t);});
+    if(!r.ok) return r.text().then(function(t){
+      console.error('JSONBin erro:', r.status, t);
+      throw new Error('Erro '+r.status+': '+t);
+    });
     return r.json();
   });
 }
 
 function getDb(){
-  return binFetch('GET', '/'+BIN_ID+'/latest').then(function(r){return r.record;});
+  return binFetch('GET', '/'+BIN_ID+'/latest').then(function(r){
+    return r.record || r;
+  }).catch(function(e){
+    var msg = e.message || '';
+    // Bin nao existe mais — recria automaticamente
+    if(msg.indexOf('404')>=0 || msg.indexOf('400')>=0){
+      console.log('Bin nao encontrado, recriando...');
+      localStorage.removeItem('qjh_bin_id');
+      BIN_ID = '';
+      return binFetch('POST','',{products:PRODUTOS_INICIAIS,movements:[]})
+        .then(function(r){
+          BIN_ID = r.metadata && r.metadata.id ? r.metadata.id : '';
+          if(!BIN_ID) throw new Error('Falha ao recriar bin');
+          localStorage.setItem('qjh_bin_id', BIN_ID);
+          console.log('Novo bin criado:', BIN_ID);
+          return {products:PRODUTOS_INICIAIS, movements:[]};
+        });
+    }
+    throw e;
+  });
 }
 function setDb(data){
-  return binFetch('PUT', '/'+BIN_ID, data);
+  return binFetch('PUT', '/'+BIN_ID, data).then(function(r){
+    return r;
+  });
 }
 
 // ── ESTADO ─────────────────────────────────────────────────────
@@ -542,8 +568,10 @@ function initBin(){
   setSyncStatus('loading','Criando banco de dados...');
   binFetch('POST','',{products:PRODUTOS_INICIAIS,movements:[]})
     .then(function(r){
-      BIN_ID = r.metadata.id;
+      BIN_ID = r.metadata && r.metadata.id ? r.metadata.id : (r.id || '');
+      if(!BIN_ID){throw new Error('ID do bin nao retornado: '+JSON.stringify(r));}
       localStorage.setItem('qjh_bin_id', BIN_ID);
+      console.log('Bin criado:', BIN_ID);
       loadData();
     })
     .catch(function(e){
@@ -574,7 +602,14 @@ function loadData(){
 }
 
 function saveDb(){
-  return setDb({products:products,movements:movements});
+  if(!BIN_ID){return Promise.reject(new Error('Banco nao inicializado. Recarregue a pagina.'));}
+  return setDb({products:products,movements:movements}).catch(function(e){
+    var msg = e.message||'';
+    if(msg.indexOf('401')>=0||msg.indexOf('403')>=0){
+      toast('Erro de acesso ao banco. Clique em "Recriar banco" nas configura\u00e7\u00f5es.','err');
+    }
+    throw e;
+  });
 }
 
 // ── NAV ────────────────────────────────────────────────────────
@@ -739,7 +774,7 @@ function showUndoToast(){if(!_undoProduct||!_undoProduct.id)return;var el=docume
 function undoDelete(){if(!_undoProduct)return;clearTimeout(_undoTimer);products.push(_undoProduct);_undoProduct=null;saveDb().then(function(){render();toast('Produto restaurado!','ok');});document.getElementById('toast').classList.remove('show');}
 
 // ── CONFIGURACOES ──────────────────────────────────────────────
-function renderConfig(){document.getElementById('cfgEmpresa').value=cfg.empresa||'';document.getElementById('cfgCnpj').value=cfg.cnpj||'';document.getElementById('cfgResponsavel').value=cfg.responsavel||'';document.getElementById('cfgAlertBadge').checked=cfg.alertBadge!==false;document.getElementById('cfgPdfMovs').checked=!!cfg.pdfMovs;document.getElementById('cfgTotalProd').textContent=products.length;document.getElementById('cfgTotalMovs').textContent=movements.length;}
+function renderConfig(){document.getElementById('cfgEmpresa').value=cfg.empresa||'';document.getElementById('cfgCnpj').value=cfg.cnpj||'';document.getElementById('cfgResponsavel').value=cfg.responsavel||'';document.getElementById('cfgAlertBadge').checked=cfg.alertBadge!==false;document.getElementById('cfgPdfMovs').checked=!!cfg.pdfMovs;document.getElementById('cfgTotalProd').textContent=products.length;document.getElementById('cfgTotalMovs').textContent=movements.length;var binEl=document.getElementById('cfgBinId');if(binEl)binEl.textContent=BIN_ID||'--';}
 function saveConfig(){cfg.empresa=document.getElementById('cfgEmpresa').value.trim()||'Quantum JH Technology';cfg.cnpj=document.getElementById('cfgCnpj').value.trim();cfg.responsavel=document.getElementById('cfgResponsavel').value.trim();cfg.alertBadge=document.getElementById('cfgAlertBadge').checked;cfg.pdfMovs=document.getElementById('cfgPdfMovs').checked;try{localStorage.setItem('qjh_cfg',JSON.stringify(cfg));}catch(e){}updateBadge();toast('Configura\u00e7\u00f5es salvas!','ok');}
 function loadConfig(){try{var s=localStorage.getItem('qjh_cfg');if(s)Object.assign(cfg,JSON.parse(s));}catch(e){}}
 
@@ -812,6 +847,27 @@ document.addEventListener('keydown',function(e){
   if(e.key==='Escape'){['prodModal','movModal','exportModal','delModal'].forEach(closeModal);return;}
   if(e.key==='Enter'&&!e.shiftKey){var tag=document.activeElement.tagName;if(tag==='TEXTAREA'||tag==='BUTTON'||tag==='SELECT')return;if(document.getElementById('prodModal').classList.contains('open')){e.preventDefault();saveProd();return;}if(document.getElementById('movModal').classList.contains('open')){e.preventDefault();saveMovement();return;}if(document.getElementById('delModal').classList.contains('open')){e.preventDefault();confirmDel();return;}}
 });
+
+
+// ── RESET BIN ─────────────────────────────────────────────────
+function resetBin(){
+  if(!confirm('Isso vai recriar o banco de dados. Os dados atuais ser\u00e3o migrados para o novo banco. Continuar?')) return;
+  setSyncStatus('loading','Recriando banco...');
+  binFetch('POST','',{products:products,movements:movements})
+    .then(function(r){
+      var newId = r.metadata && r.metadata.id ? r.metadata.id : '';
+      if(!newId) throw new Error('ID nao retornado');
+      BIN_ID = newId;
+      localStorage.setItem('qjh_bin_id', BIN_ID);
+      setSyncStatus('online','Sincronizado');
+      render();
+      toast('Banco recriado com sucesso!','ok');
+    })
+    .catch(function(e){
+      setSyncStatus('error','Erro');
+      toast('Erro ao recriar: '+e.message,'err');
+    });
+}
 
 // ── INIT ───────────────────────────────────────────────────────
 document.getElementById('currentDate').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
