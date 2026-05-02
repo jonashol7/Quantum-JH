@@ -3,206 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Quantum JH &mdash; Gest&atilde;o de Estoque</title>
+<title>Stockify &mdash; Gest&atilde;o de Estoque</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#0f1117;--surface:#181c27;--surface2:#1e2333;
-  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
-  --text:#e8eaf0;--muted:#7a8099;
-  --accent:#4f7fff;--accent-d:#3563e9;--accent-bg:rgba(79,127,255,0.10);
-  --accent-border:rgba(79,127,255,0.25);
-  --green:#30c97e;--green-bg:rgba(48,201,126,0.10);
-  --amber:#f5a623;--amber-bg:rgba(245,166,35,0.10);
-  --red:#f05252;--red-bg:rgba(240,82,82,0.10);
-  --row-hover:rgba(255,255,255,0.02);--btn-text:#fff;
-  --sidebar:220px;--radius:10px;--radius-lg:14px
-}
-body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;display:flex}
-.sidebar{width:var(--sidebar);min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:50;transition:transform .25s}
-.sidebar-logo{padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center}
-.sidebar-logo img{width:100%;height:auto;display:block;object-fit:contain;mix-blend-mode:screen}
-.sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto}
-.nav-section{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:12px 10px 6px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius);cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
-.nav-item:hover{background:var(--surface2);color:var(--text)}
-.nav-item.active{background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border)}
-.nav-item svg{flex-shrink:0;width:16px;height:16px}
-.nav-badge{margin-left:auto;background:var(--red-bg);color:var(--red);font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;border:1px solid rgba(240,82,82,.3)}
-.sidebar-footer{padding:14px 12px;border-top:1px solid var(--border)}
-.sync-status{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);padding:8px 10px;border-radius:var(--radius);background:var(--surface2)}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2s infinite}
-.sync-dot.loading{background:var(--amber)}.sync-dot.error{background:var(--red);animation:none}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
-.topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:40}
-.topbar-title{font-size:16px;font-weight:600;color:var(--text)}
-.topbar-right{display:flex;align-items:center;gap:10px}
-.topbar-date{font-size:12px;color:var(--muted)}
-.content{padding:28px;flex:1}
-.hamburger{display:none;background:none;border:none;color:var(--text);font-size:20px;cursor:pointer;padding:4px}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:49}
-.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 16px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--text);font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .1s}
-.btn:hover{background:var(--surface);border-color:var(--border2)}
-.btn:active{transform:scale(.98)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--btn-text,#fff)}
-.btn.primary:hover{background:var(--accent-d)}
-.btn.success{background:var(--green-bg);border-color:rgba(48,201,126,.3);color:var(--green)}
-.btn.success:hover{background:rgba(48,201,126,.18)}
-.btn.danger{background:var(--red-bg);border-color:rgba(240,82,82,.3);color:var(--red)}
-.btn.danger:hover{background:rgba(240,82,82,.18)}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;position:relative;overflow:hidden}
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kpi-color,var(--accent))}
-.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-.kpi-value{font-size:24px;font-weight:600;letter-spacing:-.5px;color:var(--kpi-color,var(--text))}
-.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
-.kpi-bar-wrap{height:4px;background:var(--border2);border-radius:2px;margin-top:10px;overflow:hidden}
-.kpi-bar{height:100%;border-radius:2px;background:var(--kpi-color,var(--accent));transition:width .6s}
-.kpi-delta{font-size:11px;margin-top:6px}
-.kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--red)}.kpi-delta.neutral{color:var(--muted)}
-.toolbar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
-.toolbar input[type=text]{flex:1;min-width:180px;height:36px;padding:0 12px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px}
-.toolbar input[type=text]::placeholder{color:var(--muted)}
-.toolbar input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
-.toolbar select{height:36px;padding:0 12px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px}
-.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
-.table-scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:560px}
-thead th{background:var(--surface2);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:11px 16px;text-align:left;border-bottom:1px solid var(--border)}
-thead th.sortable{cursor:pointer;user-select:none;position:relative;padding-right:22px}
-thead th.sortable:hover{color:var(--text)}
-thead th.sortable::after{content:'\2195';position:absolute;right:6px;opacity:.3;font-size:11px}
-thead th.sortable.asc::after{content:'\2191';opacity:.8}
-thead th.sortable.desc::after{content:'\2193';opacity:.8}
-tbody td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;color:var(--text)}
-tbody tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:var(--row-hover)}
-.prod-name{font-weight:500}.prod-cat{font-size:11px;color:var(--muted);margin-top:2px}
-.qty-num{font-family:'DM Mono',monospace;font-size:15px;font-weight:500}
-.table-footer{padding:10px 16px;font-size:11px;color:var(--muted);border-top:1px solid var(--border);text-align:right}
-.empty-row td{text-align:center;padding:40px;color:var(--muted);font-size:13px}
-.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500}
-.badge::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0;background:currentColor}
-.badge.ok{background:var(--green-bg);color:var(--green)}
-.badge.low{background:var(--amber-bg);color:var(--amber)}
-.badge.out{background:var(--red-bg);color:var(--red)}
-.action-btns{display:flex;gap:6px}
-.icon-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
-.icon-btn:hover{background:var(--surface2);color:var(--text)}
-.icon-btn.del:hover{background:var(--red-bg);color:var(--red);border-color:rgba(240,82,82,.3)}
-.icon-btn.mov:hover{background:var(--accent-bg);color:var(--accent);border-color:var(--accent-border)}
-.tab-content{display:none}.tab-content.active{display:block;animation:tabIn .2s ease}
-@keyframes tabIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-#loadingOverlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999}
-.spinner{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(3px)}
-.modal-bg.open{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 4px 24px rgba(0,0,0,.4);animation:slideUp .18s ease}
-@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.modal h2{font-size:17px;font-weight:600;margin-bottom:22px;color:var(--text)}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:22px;padding-top:18px;border-top:1px solid var(--border)}
-.form-group{margin-bottom:14px}
-.form-group label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
-.form-group input,.form-group select{width:100%;height:38px;padding:0 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px}
-.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
-.form-group input[readonly]{opacity:.6;cursor:default}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:14px 18px;font-size:13px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,.4);z-index:500;transform:translateY(80px);opacity:0;transition:all .3s;max-width:320px;color:var(--text);overflow:hidden}
-.toast.show{transform:translateY(0);opacity:1}
-.toast.ok{border-left:3px solid var(--green);color:var(--green)}
-.toast.err{border-left:3px solid var(--red);color:var(--red)}
-.toast-row{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.toast-undo-btn{background:none;border:1px solid currentColor;border-radius:6px;padding:3px 10px;font-size:12px;font-weight:600;cursor:pointer;color:inherit;font-family:inherit}
-.toast-progress{position:absolute;bottom:0;left:0;height:3px;background:currentColor;opacity:.4;animation:tprog 5s linear forwards}
-@keyframes tprog{from{width:100%}to{width:0}}
-.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
-.export-card{border:1px solid var(--border2);border-radius:var(--radius);padding:14px;cursor:pointer;transition:border-color .15s,background .15s}
-.export-card:hover,.export-card.sel{border-color:var(--accent);background:var(--accent-bg)}
-.export-card .ec-title{font-size:13px;font-weight:500;color:var(--text)}
-.export-card .ec-desc{font-size:11px;color:var(--muted);margin-top:3px}
-.date-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
-.date-row select{height:36px;padding:0 10px;flex:1;min-width:90px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px}
-.section-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px}
-.hist-list{max-height:190px;overflow-y:auto}
-.hist-item{display:flex;justify-content:space-between;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border);gap:10px}
-.hist-item:last-child{border-bottom:none}
-.hist-type{font-size:12px;font-weight:500}
-.hist-obs{font-size:11px;color:var(--muted);margin-top:2px}
-.hist-date{font-size:11px;color:var(--muted);white-space:nowrap;font-family:'DM Mono',monospace}
-.hist-in{color:var(--green)}.hist-out{color:var(--red)}.hist-adj{color:var(--amber)}
-.config-section{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;margin-bottom:16px}
-.config-section h3{font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)}
-.config-section p{font-size:12px;color:var(--muted);margin-bottom:18px}
-.config-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:20px}
-.config-row:last-child{border-bottom:none;padding-bottom:0}
-.config-label{font-size:13px;font-weight:500;color:var(--text)}
-.config-desc{font-size:11px;color:var(--muted);margin-top:2px}
-.config-input{height:36px;padding:0 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px;min-width:200px}
-.config-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
-.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
-.toggle input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:var(--surface2);border:1px solid var(--border2);border-radius:30px;cursor:pointer;transition:.3s}
-.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--muted);border-radius:50%;transition:.3s}
-.toggle input:checked+.toggle-slider{background:var(--accent-bg);border-color:var(--accent)}
-.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:var(--accent)}
-.color-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.color-swatch{width:36px;height:36px;border-radius:8px;cursor:pointer;border:2px solid transparent;transition:all .2s;position:relative;flex-shrink:0}
-.color-swatch.active{border-color:#fff;transform:scale(1.15)}
-.color-swatch.active::after{content:'\2713';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
-.moeda-btn{padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);color:var(--muted);font-family:inherit;font-size:13px;cursor:pointer;transition:all .2s}
-.moeda-btn.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);font-weight:600}
-.moeda-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.bg-swatch{width:40px;height:32px;border-radius:8px;cursor:pointer;border:2px solid var(--border2);transition:all .2s;flex-shrink:0}
-.bg-swatch.active{border-color:var(--accent);transform:scale(1.12)}
-.bg-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.relatorio-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px}
-.stat-card-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-.stat-card-value{font-size:22px;font-weight:600;letter-spacing:-.5px}
-.stat-card-delta{font-size:12px;margin-top:4px}
-.stat-card-delta.up{color:var(--green)}.stat-card-delta.down{color:var(--red)}.stat-card-delta.neutral{color:var(--muted)}
-.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
-.chart-title{font-size:13px;font-weight:600;margin-bottom:2px;color:var(--text)}
-.chart-sub{font-size:11px;color:var(--muted);margin-bottom:16px}
-canvas{display:block;width:100%!important}
-.chart-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
-.chart-legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
-.chart-legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.ruptura-bar-wrap{width:80px;height:5px;background:var(--border2);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px}
-.ruptura-bar{height:100%;border-radius:3px}
-.card-list{display:none;flex-direction:column;gap:10px}
-.prod-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px}
-.prod-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
-.prod-card-name{font-weight:600;font-size:14px;color:var(--text)}
-.prod-card-cat{font-size:11px;color:var(--muted);margin-top:2px}
-.prod-card-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
-.prod-card-stat{background:var(--surface2);border-radius:8px;padding:8px 10px}
-.pcs-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
-.pcs-val{font-size:15px;font-weight:600;font-family:'DM Mono',monospace;color:var(--text)}
-.prod-card-actions{display:flex;gap:6px}
-.prod-card-actions .btn{flex:1;justify-content:center;height:32px;font-size:12px}
-@media(max-width:768px){
-  .sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}
-  .sidebar-overlay.open{display:block}.main{margin-left:0}
-  .hamburger{display:flex}.topbar{padding:0 14px}.content{padding:14px}
-}
-@media(max-width:600px){
-  .table-scroll table{display:none}.card-list{display:flex}
-  .kpi-grid{grid-template-columns:1fr 1fr}.kpi-value{font-size:20px}
-  .form-row{grid-template-columns:1fr}.export-grid{grid-template-columns:1fr}
-  .modal{padding:20px}.config-row{flex-direction:column;align-items:flex-start}
-  .config-input{min-width:100%;width:100%}
-}
-</style>
+<?!= include('Estilo') ?>
 </head>
 <body>
 
+
 <div id="loadingOverlay">
-  <img src="<?= logoLoading ?>" alt="Quantum JH" style="width:260px;max-width:80vw;height:auto;object-fit:contain;mix-blend-mode:screen">
+  <img id="logoLoadingImg" src="" alt="Logo" style="width:260px;max-width:80vw;height:auto;object-fit:contain;mix-blend-mode:screen">
   <div class="spinner"></div>
 </div>
 
@@ -210,7 +19,7 @@ canvas{display:block;width:100%!important}
 
 <aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
-    <img src="<?= logoSidebar ?>" alt="Quantum JH" style="mix-blend-mode:screen">
+    <img id="logoSidebarImg" src="" alt="Logo" style="width:100%;height:auto;display:block;object-fit:contain;mix-blend-mode:screen">
   </div>
   <nav class="sidebar-nav">
     <div class="nav-section">Estoque</div>
@@ -238,6 +47,10 @@ canvas{display:block;width:100%!important}
     </button>
   </nav>
   <div class="sidebar-footer">
+    <button class="nav-item" onclick="openModal('shortcutsModal')" style="margin-bottom:8px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>
+      Atalhos (?)
+    </button>
     <div class="sync-status">
       <span class="sync-dot loading" id="syncDot"></span>
       <span id="syncText">Carregando...</span>
@@ -307,7 +120,7 @@ canvas{display:block;width:100%!important}
         <div style="display:flex;gap:8px">
           <select id="movFilterProd" onchange="renderMovs()" style="height:36px;padding:0 12px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px"><option value="">Todos os produtos</option></select>
           <select id="movFilterType" onchange="renderMovs()" style="height:36px;padding:0 12px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px">
-            <option value="">Todos os tipos</option><option value="in">Entradas</option><option value="out">Sa&iacute;das</option><option value="adj">Ajustes</option>
+            <option value="">Todos os tipos</option><option value="in">Entradas</option><option value="out">Sa&iacute;das</option><option value="adj">Ajustes</option><option value="price">Pre&ccedil;os</option>
           </select>
         </div>
       </div>
@@ -348,6 +161,45 @@ canvas{display:block;width:100%!important}
           <tbody id="rupturaBody"></tbody>
         </table></div>
       </div>
+
+      <!-- VALOR POR CATEGORIA -->
+      <div class="chart-wrap">
+        <div class="chart-title">Valor do estoque por categoria</div>
+        <div class="chart-sub">Distribui&ccedil;&atilde;o do capital investido por categoria</div>
+        <div id="catChart" style="display:flex;flex-direction:column;gap:10px;margin-top:8px"></div>
+      </div>
+
+      <!-- TOP PRODUTOS POR VALOR -->
+      <div class="chart-wrap">
+        <div class="chart-title">Top produtos por valor</div>
+        <div class="chart-sub">Produtos que somam mais dinheiro no estoque atual</div>
+        <div class="table-scroll"><table>
+          <thead><tr>
+            <th style="width:6%;text-align:center">#</th>
+            <th style="width:36%">Produto</th>
+            <th style="width:14%;text-align:center">Qtd.</th>
+            <th style="width:18%;text-align:right">Custo unit.</th>
+            <th style="width:18%;text-align:right">Valor total</th>
+            <th style="width:8%;text-align:right">% total</th>
+          </tr></thead>
+          <tbody id="topProdBody"></tbody>
+        </table></div>
+      </div>
+
+      <!-- HISTORICO DE PRECOS -->
+      <div class="chart-wrap">
+        <div class="chart-title">Hist&oacute;rico de pre&ccedil;os</div>
+        <div class="chart-sub">Acompanhe como o custo dos produtos mudou ao longo do tempo</div>
+        <div style="margin-bottom:14px">
+          <select id="precoProd" onchange="renderPrecoHist()" style="width:100%;height:38px;padding:0 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:inherit;font-size:13px">
+            <option value="">Selecione um produto...</option>
+          </select>
+        </div>
+        <div id="precoChartWrap" style="display:none">
+          <canvas id="chartPrecos" height="180"></canvas>
+        </div>
+        <div id="precoEmpty" style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Selecione um produto para ver o hist&oacute;rico de pre&ccedil;os</div>
+      </div>
     </div>
 
     <div class="tab-content" id="tab-configuracoes">
@@ -357,10 +209,47 @@ canvas{display:block;width:100%!important}
       </div>
       <div class="config-section">
         <h3>&#127970; Empresa</h3><p>Dados exibidos nos relat&oacute;rios PDF</p>
-        <div class="config-row"><div><div class="config-label">Nome</div></div><input class="config-input" id="cfgEmpresa" type="text" placeholder="Quantum JH Technology"></div>
+        <div class="config-row"><div><div class="config-label">Nome</div></div><input class="config-input" id="cfgEmpresa" type="text" placeholder="Sua Empresa"></div>
         <div class="config-row"><div><div class="config-label">CNPJ</div></div><input class="config-input" id="cfgCnpj" type="text" placeholder="00.000.000/0000-00"></div>
         <div class="config-row"><div><div class="config-label">Respons&aacute;vel</div></div><input class="config-input" id="cfgResponsavel" type="text" placeholder="Nome do respons&aacute;vel"></div>
       </div>
+      <div class="config-section">
+        <h3>&#127912; Identidade visual</h3>
+        <p>Personalize a marca do sistema com sua pr&oacute;pria logo</p>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Nome do sistema</div>
+            <div class="config-desc">Aparece no t&iacute;tulo e em textos do sistema</div>
+          </div>
+          <input class="config-input" id="cfgSistemaName" type="text" placeholder="Stockify" oninput="cfg.sistemaName=this.value;applyBranding()">
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Logo da tela de carregamento</div>
+            <div class="config-desc">Recomendado: 280x130px, PNG/SVG, fundo transparente</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn" onclick="document.getElementById('logoLoadingFile').click()" style="height:36px">&#128229; Enviar</button>
+            <button class="btn" onclick="resetLogo('loading')" style="height:36px" title="Restaurar padr&atilde;o">&#8634;</button>
+            <input type="file" id="logoLoadingFile" accept="image/*" style="display:none" onchange="uploadLogo(this,'loading')">
+          </div>
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Logo da barra lateral</div>
+            <div class="config-desc">Recomendado: 200x100px, PNG/SVG, fundo transparente</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn" onclick="document.getElementById('logoSidebarFile').click()" style="height:36px">&#128229; Enviar</button>
+            <button class="btn" onclick="resetLogo('sidebar')" style="height:36px" title="Restaurar padr&atilde;o">&#8634;</button>
+            <input type="file" id="logoSidebarFile" accept="image/*" style="display:none" onchange="uploadLogo(this,'sidebar')">
+          </div>
+        </div>
+      </div>
+
       <div class="config-section">
         <h3>&#127775; Apar&ecirc;ncia</h3><p>Cor de destaque e tema</p>
         <div class="config-row">
@@ -414,6 +303,26 @@ canvas{display:block;width:100%!important}
         <div class="config-row"><div><div class="config-label">ID do banco</div><div class="config-desc">Identificador do armazenamento JSONBin</div></div><span style="font-family:'DM Mono',monospace;color:var(--muted);font-size:11px" id="cfgBinId">--</span></div>
         <div class="config-row"><div><div class="config-label">Redefinir banco de dados</div><div class="config-desc">Cria um novo banco e migra todos os dados</div></div><button class="btn danger" onclick="resetBin()" style="height:32px;font-size:12px">&#8635; Recriar banco</button></div>
       </div>
+            <div class="config-section">
+        <h3>&#128190; Importa&ccedil;&atilde;o e backup</h3><p>Importe em lote ou fa&ccedil;a c&oacute;pia de seguran&ccedil;a</p>
+        <div class="config-row">
+          <div><div class="config-label">Importar produtos</div><div class="config-desc">Cole dados de uma planilha</div></div>
+          <button class="btn" onclick="openModal('importModal')" style="height:36px">&#128229; Importar</button>
+        </div>
+        <div class="config-row">
+          <div><div class="config-label">Backup completo</div><div class="config-desc">Baixe ou restaure todos os dados</div></div>
+          <button class="btn" onclick="openModal('backupModal');renderBackupInfo()" style="height:36px">&#128190; Backup</button>
+        </div>
+      </div>
+
+      <div class="config-section">
+        <h3>&#128203; Hist&oacute;rico de atividade</h3><p>Suas &uacute;ltimas 10 a&ccedil;&otilde;es no sistema</p>
+        <div id="activityLog" style="background:var(--surface2);border-radius:var(--radius);overflow:hidden;max-height:380px;overflow-y:auto"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button class="btn" onclick="if(confirm('Limpar todo o historico?')){localStorage.removeItem('qjh_activity');renderActivityLog();}">Limpar historico</button>
+        </div>
+      </div>
+
       <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
         <button class="btn" onclick="loadData()">&#8635; Recarregar</button>
         <button class="btn primary" onclick="saveConfig()">&#10003; Salvar</button>
@@ -484,326 +393,118 @@ canvas{display:block;width:100%!important}
   </div>
 </div></div>
 
+
+<!-- MODAL BOAS-VINDAS (alertas pendentes) -->
+<div class="modal-bg" id="welcomeModal"><div class="modal" style="max-width:420px">
+  <h2 style="display:flex;align-items:center;gap:8px">&#9888; Voc&ecirc; tem alertas pendentes</h2>
+  <div id="welcomeContent" style="margin-bottom:8px"></div>
+  <p style="font-size:12px;color:var(--muted);margin-top:14px">Acesse o Dashboard para ver detalhes</p>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModal('welcomeModal')">Lembrar depois</button>
+    <button class="btn primary" onclick="closeModal('welcomeModal');navTo('dashboard')">Ver alertas</button>
+  </div>
+</div></div>
+
+<!-- MODAL ATALHOS DE TECLADO -->
+<div class="modal-bg" id="shortcutsModal"><div class="modal" style="max-width:380px">
+  <h2>&#9000; Atalhos de teclado</h2>
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:13px"><span>Novo produto</span><kbd style="font-family:'DM Mono',monospace;background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)">N</kbd></div>
+    <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:13px"><span>Buscar produto</span><kbd style="font-family:'DM Mono',monospace;background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)">/</kbd></div>
+    <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:13px"><span>Dashboard</span><kbd style="font-family:'DM Mono',monospace;background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)">1</kbd></div>
+    <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:13px"><span>Produtos</span><kbd style="font-family:'DM Mono',monospace;background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)">2</kbd></div>
+    <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:13px"><span>Movimenta&ccedil;&otilde;es</span><kbd style="font-family:'DM Mono',monospace;background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)">3</kbd></div>
+    <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:13px"><span>Relat&oacute;rios</span><kbd style="font-family:'DM Mono',monospace;background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)">4</kbd></div>
+    <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:13px"><span>Confirmar (em modais)</span><kbd style="font-family:'DM Mono',monospace;background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)">Enter</kbd></div>
+    <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:13px"><span>Fechar modal</span><kbd style="font-family:'DM Mono',monospace;background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)">Esc</kbd></div>
+    <div style="display:flex;justify-content:space-between;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:13px"><span>Esta ajuda</span><kbd style="font-family:'DM Mono',monospace;background:var(--bg);padding:2px 8px;border-radius:4px;border:1px solid var(--border2)">?</kbd></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn primary" onclick="closeModal('shortcutsModal')">Fechar</button>
+  </div>
+</div></div>
+
+
+<!-- MODAL IMPORTAR -->
+<div class="modal-bg" id="importModal"><div class="modal" style="max-width:560px">
+  <h2>&#128229; Importar produtos</h2>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:14px">
+    Cole os dados copiados de uma planilha. Use a primeira linha como cabe&ccedil;alho com os campos:
+    <strong style="color:var(--text)">name, qty, min, cost, cat</strong>
+  </p>
+  <div style="background:var(--surface2);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted);overflow-x:auto;white-space:pre">name	qty	min	cost	cat
+Parafuso M8	100	20	0.50	Mecanica
+Cabo 2.5mm	50	10	2.30	Eletrica</div>
+  <div class="form-group">
+    <label>Cole os dados (TSV ou CSV)</label>
+    <textarea id="importData" rows="8" placeholder="Cole aqui..." style="width:100%;padding:12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;resize:vertical;min-height:140px"></textarea>
+  </div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:8px">
+    &bull; Produtos com nome igual ser&atilde;o <strong style="color:var(--accent)">atualizados</strong><br>
+    &bull; Produtos novos ser&atilde;o <strong style="color:var(--green)">cadastrados</strong>
+  </div>
+  <div id="importResult" style="display:none;font-size:12px;padding:10px;border-radius:var(--radius);margin-top:10px"></div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModal('importModal')">Cancelar</button>
+    <button class="btn primary" id="btnImport" onclick="doImport()">Importar</button>
+  </div>
+</div></div>
+
+<!-- MODAL BACKUP -->
+<div class="modal-bg" id="backupModal"><div class="modal" style="max-width:480px">
+  <h2>&#128190; Backup e restaura&ccedil;&atilde;o</h2>
+  <p style="font-size:12px;color:var(--muted);margin-bottom:18px">
+    Baixe um arquivo JSON com todos os seus produtos e movimenta&ccedil;&otilde;es. Voc&ecirc; pode usar esse arquivo para restaurar os dados depois.
+  </p>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <button class="btn primary" onclick="doBackup()" style="height:44px;justify-content:center">
+      &#8595; Baixar backup completo
+    </button>
+    <button class="btn" onclick="document.getElementById('restoreFile').click()" style="height:44px;justify-content:center">
+      &#8593; Restaurar de arquivo
+    </button>
+    <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="doRestore(event)">
+  </div>
+  <div id="backupInfo" style="margin-top:14px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius);font-size:11px;color:var(--muted)"></div>
+  <div class="modal-footer">
+    <button class="btn" onclick="closeModal('backupModal')">Fechar</button>
+  </div>
+</div></div>
+
+
+<!-- MODAL SETUP INICIAL (primeiro acesso) -->
+<div class="modal-bg" id="setupModal"><div class="modal" style="max-width:480px">
+  <h2 style="font-size:20px;margin-bottom:8px">&#127881; Bem-vindo!</h2>
+  <p style="font-size:13px;color:var(--muted);margin-bottom:22px">
+    Vamos configurar sua marca em 30 segundos. Voc&ecirc; pode alterar tudo depois nas Configura&ccedil;&otilde;es.
+  </p>
+
+  <div class="form-group">
+    <label>Nome da sua empresa</label>
+    <input type="text" id="setupEmpresa" placeholder="Ex: Loja do Jo&atilde;o" autocomplete="off">
+  </div>
+
+  <div class="form-group">
+    <label>Nome do sistema (opcional)</label>
+    <input type="text" id="setupSistema" placeholder="Ex: Estoque Pro, MeuStock..." autocomplete="off" value="Stockify">
+    <div style="font-size:11px;color:var(--muted);margin-top:4px">
+      Aparece no t&iacute;tulo da p&aacute;gina e em alguns lugares do sistema
+    </div>
+  </div>
+
+  <div style="background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:var(--radius);padding:12px;margin-top:18px;font-size:12px;color:var(--text)">
+    &#128161; <strong>Dica:</strong> ap&oacute;s criar, v&aacute; em <strong>Configura&ccedil;&otilde;es &rarr; Identidade Visual</strong> para enviar sua logo personalizada.
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn" onclick="skipSetup()">Pular agora</button>
+    <button class="btn primary" onclick="finishSetup()">Salvar e come&ccedil;ar</button>
+  </div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
-<script>
 
-// ── GOOGLE APPS SCRIPT BRIDGE ─────────────────────────────────
-function scriptRun(fn, args, successCb, errorCb) {
-  var runner = google.script.run
-    .withSuccessHandler(successCb)
-    .withFailureHandler(function(e) {
-      console.error('GAS erro:', e);
-      if (errorCb) errorCb(e);
-    });
-  if (args && args.length) {
-    runner[fn].apply(runner, args);
-  } else {
-    runner[fn]();
-  }
-}
-
-// ── ESTADO ─────────────────────────────────────────────────────
-var MONTHS=['Janeiro','Fevereiro','Mar\u00e7o','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-var products=[],movements=[];
-var editId=null,delId=null,movProdId=null,exportType='week';
-var sortCol='',sortDir=1;
-var _undoTimer=null,_undoProduct=null;
-var cfg={empresa:'Quantum JH Technology',cnpj:'',responsavel:'',alertBadge:true,pdfMovs:false,moeda:'R$',moedaLocale:'pt-BR',accent:'#4f7fff',bgPreset:'',bgIsLight:false};
-
-// ── INICIALIZAR BIN ────────────────────────────────────────────
-function initBin(){
-  loadData();
-}
-
-// ── CARREGAR DADOS ─────────────────────────────────────────────
-function loadData(){
-  setSyncStatus('loading','Carregando...');
-  google.script.run
-    .withSuccessHandler(function(data){
-      products  = data.products  || [];
-      movements = data.movements || [];
-      setSyncStatus('online','Sincronizado');
-      document.getElementById('cfgLastSync').textContent=new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-      render();
-      document.getElementById('loadingOverlay').style.display='none';
-    })
-    .withFailureHandler(function(e){
-      console.error('loadData erro:', e);
-      setSyncStatus('error','Erro de conexao');
-      document.getElementById('loadingOverlay').style.display='none';
-      toast('Erro ao carregar dados','err');
-    })
-    .getTodos();
-}
-
-function saveDb(){
-  // No Apps Script nao usamos saveDb — cada acao chama o servidor diretamente
-  return Promise.resolve();
-}
-
-// ── NAV ────────────────────────────────────────────────────────
-var TITLES={dashboard:'Dashboard',produtos:'Produtos',movimentacoes:'Movimenta\u00e7\u00f5es',relatorios:'Relat\u00f3rios',configuracoes:'Configura\u00e7\u00f5es'};
-function navTo(tab){
-  document.querySelectorAll('.nav-item').forEach(function(el){el.classList.remove('active');});
-  document.getElementById('nav-'+tab).classList.add('active');
-  document.querySelectorAll('.tab-content').forEach(function(el){el.classList.remove('active');});
-  document.getElementById('tab-'+tab).classList.add('active');
-  document.getElementById('topbarTitle').textContent=TITLES[tab]||tab;
-  if(tab==='movimentacoes') renderMovs();
-  if(tab==='relatorios')    setTimeout(renderRelatorios,50);
-  if(tab==='configuracoes'){renderConfig();applyAllPrefs();updateMoedaPreview();}
-  if(window.innerWidth<=768) toggleSidebar();
-}
-function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebarOverlay').classList.toggle('open');}
-function setSyncStatus(state,text){document.getElementById('syncDot').className='sync-dot'+(state==='online'?'':' '+state);document.getElementById('syncText').textContent=text;}
-function toast(msg,type){var el=document.getElementById('toast');el.innerHTML=msg;el.className='toast '+(type||'ok')+' show';setTimeout(function(){el.classList.remove('show');},3200);}
-function getStatus(p){var q=Number(p.qty)||0,m=Number(p.min)||0;return q===0?'out':q<=m?'low':'ok';}
-function statusLabel(s){return{ok:'Em estoque',low:'Estoque baixo',out:'Sem estoque'}[s];}
-function fmtMoeda(val){return (cfg.moeda||'R$')+'\u00a0'+(Number(val)||0).toLocaleString(cfg.moedaLocale||'pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
-
-// ── RENDER ─────────────────────────────────────────────────────
-function render(){
-  renderKPIs();renderTable();renderAlerts();updateBadge();
-  document.getElementById('cfgTotalProd').textContent=products.length;
-  document.getElementById('cfgTotalMovs').textContent=movements.length;
-  var sel=document.getElementById('movFilterProd'),cur=sel.value;
-  sel.innerHTML='<option value="">Todos os produtos</option>';
-  products.forEach(function(p){sel.innerHTML+='<option value="'+p.id+'"'+(p.id===cur?' selected':'')+'>'+p.name+'</option>';});
-}
-
-function renderKPIs(){
-  var val=products.reduce(function(a,p){return a+(Number(p.qty)||0)*(Number(p.cost)||0);},0);
-  var low=products.filter(function(p){return getStatus(p)==='low';}).length;
-  var out=products.filter(function(p){return getStatus(p)==='out';}).length;
-  var now=new Date(),thisM=now.getMonth(),thisY=now.getFullYear();
-  var tm=movements.filter(function(m){var d=new Date(m.date);return d.getMonth()===thisM&&d.getFullYear()===thisY;});
-  var net=tm.reduce(function(a,m){var p=products.find(function(x){return x.id===m.prod_id;})||{};var c=Number(p.cost)||0;return m.type==='in'?a+Number(m.qty)*c:m.type==='out'?a-Number(m.qty)*c:a;},0);
-  var vp=val-net,delta=vp?((val-vp)/Math.abs(vp)*100):0;
-  var ds=delta>0?'\u25b2':delta<0?'\u25bc':'\u2014',dc=delta>0?'up':delta<0?'down':'neutral';
-  var pL=products.length?Math.round(low/products.length*100):0;
-  var pO=products.length?Math.round(out/products.length*100):0;
-  document.getElementById('kpis').innerHTML=
-    kH('var(--accent)','Produtos cadastrados',products.length,'itens no sistema','100%','')+
-    kH('var(--green)','Valor em estoque',fmtMoeda(val),'','',ds+' '+Math.abs(delta).toFixed(1)+'% vs m\u00eas ant.',dc)+
-    kH('var(--amber)','Estoque baixo',low,'produto(s)',pL+'%','')+
-    kH('var(--red)','Sem estoque',out,'produto(s)',pO+'%','');
-}
-function kH(color,label,value,sub,bar,delta,dc){
-  return '<div class="kpi" style="--kpi-color:'+color+'">'+
-    '<div class="kpi-label">'+label+'</div>'+
-    '<div class="kpi-value" style="font-size:22px">'+value+'</div>'+
-    (sub?'<div class="kpi-sub">'+sub+'</div>':'')+
-    (bar?'<div class="kpi-bar-wrap"><div class="kpi-bar" style="width:'+bar+'"></div></div>':'')+
-    (delta?'<div class="kpi-delta '+(dc||'neutral')+'">'+delta+'</div>':'')+
-  '</div>';
-}
-
-function renderAlerts(){
-  var al=products.filter(function(p){return getStatus(p)!=='ok';});
-  var tb=document.getElementById('alertBody');
-  if(!al.length){tb.innerHTML='<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--green)">\u2713 Todos os produtos est\u00e3o com estoque adequado</td></tr>';return;}
-  tb.innerHTML=al.map(function(p){var s=getStatus(p);return '<tr><td><div class="prod-name">'+p.name+'</div></td><td style="color:var(--muted)">'+(p.cat||'\u2014')+'</td><td style="text-align:center;font-weight:600">'+(Number(p.qty)||0)+'</td><td style="text-align:center;color:var(--muted)">'+(Number(p.min)||0)+'</td><td><span class="badge '+s+'">'+statusLabel(s)+'</span></td></tr>';}).join('');
-}
-function updateBadge(){var n=products.filter(function(p){return getStatus(p)!=='ok';}).length;var b=document.getElementById('badgeAlerta');b.style.display=cfg.alertBadge&&n>0?'':'none';b.textContent=n;}
-function sortBy(col){if(sortCol===col){sortDir*=-1;}else{sortCol=col;sortDir=1;}document.querySelectorAll('thead th.sortable').forEach(function(th){th.classList.remove('asc','desc');if(th.dataset.col===col)th.classList.add(sortDir===1?'asc':'desc');});renderTable();}
-function getSorted(list){if(!sortCol)return list;return list.slice().sort(function(a,b){var av=sortCol==='name'?(a.name||'').toLowerCase():Number(a[sortCol])||0;var bv=sortCol==='name'?(b.name||'').toLowerCase():Number(b[sortCol])||0;return av<bv?-sortDir:av>bv?sortDir:0;});}
-
-function renderTable(){
-  var q=(document.getElementById('search').value||'').toLowerCase();
-  var fs=document.getElementById('filterStatus').value||'';
-  var rows=getSorted(products.filter(function(p){return(p.name.toLowerCase().indexOf(q)>=0||(p.cat||'').toLowerCase().indexOf(q)>=0)&&(!fs||getStatus(p)===fs);}));
-  var tb=document.getElementById('tableBody');
-  if(!rows.length){tb.innerHTML='<tr class="empty-row"><td colspan="6">Nenhum produto encontrado</td></tr>';}
-  else{tb.innerHTML=rows.map(function(p){var s=getStatus(p);return '<tr><td><div class="prod-name">'+p.name+'</div><div class="prod-cat">'+(p.cat||'\u2014')+'</div></td><td style="text-align:center"><span class="qty-num">'+(Number(p.qty)||0)+'</span></td><td style="text-align:center;color:var(--muted)">'+(Number(p.min)||0)+'</td><td style="font-family:\'DM Mono\',monospace;font-size:12px">'+fmtMoeda(Number(p.cost)||0)+'</td><td><span class="badge '+s+'">'+statusLabel(s)+'</span></td><td><div class="action-btns"><button class="icon-btn mov" onclick="openMov(\''+p.id+'\')">&#8645;</button><button class="icon-btn" onclick="openEdit(\''+p.id+'\')">&#9998;</button><button class="icon-btn del" onclick="openDel(\''+p.id+'\')">&#10005;</button></div></td></tr>';}).join('');}
-  renderCards(rows);
-  document.getElementById('tableCount').textContent=rows.length+' de '+products.length+' produto(s)';
-}
-
-function renderCards(rows){
-  var cl=document.getElementById('cardList');if(!cl)return;
-  if(!rows.length){cl.innerHTML='<div style="text-align:center;padding:30px;color:var(--muted)">Nenhum produto encontrado</div>';return;}
-  cl.innerHTML=rows.map(function(p){var s=getStatus(p);return '<div class="prod-card"><div class="prod-card-header"><div><div class="prod-card-name">'+p.name+'</div><div class="prod-card-cat">'+(p.cat||'\u2014')+'</div></div><span class="badge '+s+'">'+statusLabel(s)+'</span></div><div class="prod-card-stats"><div class="prod-card-stat"><div class="pcs-label">Qtd.</div><div class="pcs-val">'+(Number(p.qty)||0)+'</div></div><div class="prod-card-stat"><div class="pcs-label">M\u00edn.</div><div class="pcs-val">'+(Number(p.min)||0)+'</div></div><div class="prod-card-stat"><div class="pcs-label">Custo</div><div class="pcs-val" style="font-size:12px">'+fmtMoeda(Number(p.cost)||0)+'</div></div></div><div class="prod-card-actions"><button class="btn" onclick="openMov(\''+p.id+'\')">&#8645; Mover</button><button class="btn" onclick="openEdit(\''+p.id+'\')">&#9998; Editar</button><button class="btn danger" onclick="openDel(\''+p.id+'\')">&#10005;</button></div></div>';}).join('');
-}
-
-function renderMovs(){
-  var fp=document.getElementById('movFilterProd').value||'';
-  var ft=document.getElementById('movFilterType').value||'';
-  var rows=movements.filter(function(m){return(!fp||m.prod_id===fp)&&(!ft||m.type===ft);}).slice().reverse();
-  var tb=document.getElementById('movBody');
-  if(!rows.length){tb.innerHTML='<tr class="empty-row"><td colspan="5">Nenhuma movimenta\u00e7\u00e3o</td></tr>';return;}
-  tb.innerHTML=rows.map(function(m){
-    var p=products.find(function(x){return x.id===m.prod_id;})||{};
-    var sign=m.type==='in'?'+':m.type==='out'?'\u2212':'~';
-    var cls=m.type==='in'?'ok':m.type==='out'?'out':'low';
-    var lbl=m.type==='in'?'Entrada':m.type==='out'?'Sa\u00edda':'Ajuste';
-    var ds='\u2014';
-    if(m.date){var d=new Date(m.date);ds=d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+'/'+d.getFullYear()+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
-    return '<tr><td><div class="prod-name">'+(p.name||'Removido')+'</div><div class="prod-cat">'+(p.cat||'\u2014')+'</div></td><td><span class="badge '+cls+'">'+sign+' '+lbl+'</span></td><td style="text-align:center;font-weight:600">'+Math.abs(Number(m.qty)||0)+'</td><td style="color:var(--muted);font-size:12px">'+(m.obs||'\u2014')+'</td><td style="font-size:12px;color:var(--muted)">'+ds+'</td></tr>';
-  }).join('');
-  document.getElementById('movCount').textContent=rows.length+' movimenta\u00e7\u00e3o(es)';
-}
-
-// ── CRUD ───────────────────────────────────────────────────────
-function openAdd(){editId=null;document.getElementById('prodModalTitle').textContent='Novo produto';document.getElementById('fName').value='';document.getElementById('fQty').value=0;document.getElementById('fMin').value=5;document.getElementById('fCost').value='0.00';document.getElementById('fCat').value='';openModal('prodModal');}
-function openEdit(id){editId=id;var p=products.find(function(x){return x.id===id;});if(!p)return;document.getElementById('prodModalTitle').textContent='Editar produto';document.getElementById('fName').value=p.name;document.getElementById('fQty').value=p.qty;document.getElementById('fMin').value=p.min;document.getElementById('fCost').value=(Number(p.cost)||0).toFixed(2);document.getElementById('fCat').value=p.cat||'';openModal('prodModal');}
-
-function saveProd(){
-  var name=document.getElementById('fName').value.trim();
-  if(!name){toast('Informe o nome.','err');return;}
-  var qty=parseInt(document.getElementById('fQty').value)||0;
-  var min=parseInt(document.getElementById('fMin').value)||0;
-  var cost=parseFloat(document.getElementById('fCost').value)||0;
-  var cat=document.getElementById('fCat').value.trim();
-  var btn=document.getElementById('btnSaveProd');
-  btn.disabled=true;btn.textContent='Salvando...';
-  google.script.run
-    .withSuccessHandler(function(res){
-      btn.disabled=false;btn.textContent='Salvar';
-      if(res==='ok'){closeModal('prodModal');loadData();toast(editId?'Produto atualizado!':'Produto cadastrado!','ok');}
-      else toast('Erro: '+res,'err');
-    })
-    .withFailureHandler(function(){btn.disabled=false;btn.textContent='Salvar';toast('Erro ao salvar.','err');})
-    .salvarProduto(editId?String(editId):'',name,qty,min,cost,cat);
-}
-
-function openMov(id){movProdId=id;var p=products.find(function(x){return x.id===id;});if(!p)return;document.getElementById('movTitle').textContent='Movimentar \u2014 '+p.name;document.getElementById('movProdName').value=p.name;document.getElementById('movQty').value=1;document.getElementById('movObs').value='';document.getElementById('movType').value='in';renderHist(id);openModal('movModal');}
-function renderHist(id){
-  var items=movements.filter(function(m){return m.prod_id===id;}).slice(-8).reverse();
-  var el=document.getElementById('histList');
-  if(!items.length){el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:10px 0">Sem movimenta\u00e7\u00f5es.</div>';return;}
-  el.innerHTML=items.map(function(m){var sign=m.type==='in'?'+':m.type==='out'?'\u2212':'~';var cls=m.type==='in'?'hist-in':m.type==='out'?'hist-out':'hist-adj';var lbl=m.type==='in'?'Entrada':m.type==='out'?'Sa\u00edda':'Ajuste';var ds='\u2014';if(m.date){var d=new Date(m.date);ds=d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0')+' '+d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}return '<div class="hist-item"><div><div class="hist-type '+cls+'">'+sign+Math.abs(Number(m.qty)||0)+' \u2014 '+lbl+'</div>'+(m.obs?'<div class="hist-obs">'+m.obs+'</div>':'')+'</div><div class="hist-date">'+ds+'</div></div>';}).join('');
-}
-
-function saveMovement(){
-  var type=document.getElementById('movType').value;
-  var qty=parseInt(document.getElementById('movQty').value)||0;
-  var obs=document.getElementById('movObs').value.trim();
-  if(qty<=0){toast('Quantidade invalida.','err');return;}
-  var p=products.find(function(x){return x.id===movProdId;});if(!p)return;
-  var pQty=Number(p.qty)||0;
-  if(type==='out'&&pQty<qty){toast('Estoque insuficiente.','err');return;}
-  var newQty=type==='in'?pQty+qty:type==='out'?pQty-qty:qty;
-  var btn=document.getElementById('btnSaveMov');btn.disabled=true;btn.textContent='Registrando...';
-  google.script.run
-    .withSuccessHandler(function(res){
-      btn.disabled=false;btn.textContent='Registrar';
-      if(res==='ok'){loadData();renderHist(movProdId);toast('Movimentacao registrada!','ok');}
-      else toast('Erro: '+res,'err');
-    })
-    .withFailureHandler(function(){btn.disabled=false;btn.textContent='Registrar';toast('Erro.','err');})
-    .registrarMovimentacao(movProdId,type,qty,obs,newQty);
-}
-
-function openDel(id){delId=id;var p=products.find(function(x){return x.id===id;});document.getElementById('delName').textContent=p?p.name:'';openModal('delModal');}
-function confirmDel(){
-  _undoProduct=JSON.parse(JSON.stringify(products.find(function(x){return x.id===delId;})||{}));
-  var btn=document.getElementById('btnConfirmDel');btn.disabled=true;btn.textContent='Excluindo...';
-  google.script.run
-    .withSuccessHandler(function(res){
-      btn.disabled=false;btn.textContent='Excluir';
-      if(res==='ok'){closeModal('delModal');loadData();showUndoToast();}
-      else toast('Erro: '+res,'err');
-    })
-    .withFailureHandler(function(){btn.disabled=false;btn.textContent='Excluir';toast('Erro.','err');})
-    .excluirProduto(delId);
-}
-function showUndoToast(){if(!_undoProduct||!_undoProduct.id)return;var el=document.getElementById('toast');el.className='toast err show';el.innerHTML='<div class="toast-row"><span>"'+_undoProduct.name+'" exclu\u00eddo</span><button class="toast-undo-btn" onclick="undoDelete()">DESFAZER</button></div><div class="toast-progress"></div>';if(_undoTimer)clearTimeout(_undoTimer);_undoTimer=setTimeout(function(){el.classList.remove('show');_undoProduct=null;},5000);}
-function undoDelete(){
-  if(!_undoProduct)return;
-  clearTimeout(_undoTimer);
-  var p=_undoProduct;_undoProduct=null;
-  document.getElementById('toast').classList.remove('show');
-  google.script.run
-    .withSuccessHandler(function(res){if(res==='ok'){loadData();toast('Produto restaurado!','ok');}})
-    .withFailureHandler(function(){toast('Erro ao restaurar.','err');})
-    .salvarProduto('',p.name,p.qty,p.min,p.cost,p.cat);
-}
-
-// ── CONFIGURACOES ──────────────────────────────────────────────
-function renderConfig(){document.getElementById('cfgEmpresa').value=cfg.empresa||'';document.getElementById('cfgCnpj').value=cfg.cnpj||'';document.getElementById('cfgResponsavel').value=cfg.responsavel||'';document.getElementById('cfgAlertBadge').checked=cfg.alertBadge!==false;document.getElementById('cfgPdfMovs').checked=!!cfg.pdfMovs;document.getElementById('cfgTotalProd').textContent=products.length;document.getElementById('cfgTotalMovs').textContent=movements.length;var binEl=document.getElementById('cfgBinId');if(binEl)binEl.textContent=BIN_ID||'--';}
-function saveConfig(){cfg.empresa=document.getElementById('cfgEmpresa').value.trim()||'Quantum JH Technology';cfg.cnpj=document.getElementById('cfgCnpj').value.trim();cfg.responsavel=document.getElementById('cfgResponsavel').value.trim();cfg.alertBadge=document.getElementById('cfgAlertBadge').checked;cfg.pdfMovs=document.getElementById('cfgPdfMovs').checked;try{localStorage.setItem('qjh_cfg',JSON.stringify(cfg));}catch(e){}updateBadge();toast('Configura\u00e7\u00f5es salvas!','ok');}
-function loadConfig(){try{var s=localStorage.getItem('qjh_cfg');if(s)Object.assign(cfg,JSON.parse(s));}catch(e){}}
-
-// ── APARENCIA ──────────────────────────────────────────────────
-var accentMap={'#4f7fff':{d:'#3563e9',bg:'rgba(79,127,255,0.10)'},'#7c3aed':{d:'#6d28d9',bg:'rgba(124,58,237,0.10)'},'#0ea5e9':{d:'#0284c7',bg:'rgba(14,165,233,0.10)'},'#10b981':{d:'#059669',bg:'rgba(16,185,129,0.10)'},'#f59e0b':{d:'#d97706',bg:'rgba(245,158,11,0.10)'},'#ef4444':{d:'#dc2626',bg:'rgba(239,68,68,0.10)'},'#ec4899':{d:'#db2777',bg:'rgba(236,72,153,0.10)'},'#f97316':{d:'#ea580c',bg:'rgba(249,115,22,0.10)'}};
-function lum(hex){var r=parseInt(hex.slice(1,3),16)/255,g=parseInt(hex.slice(3,5),16)/255,b=parseInt(hex.slice(5,7),16)/255;function c(v){return v<.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);}return .2126*c(r)+.7152*c(g)+.0722*c(b);}
-function applyAccent(color){var c=accentMap[color]||accentMap['#4f7fff'];var r=document.documentElement.style;r.setProperty('--accent',color);r.setProperty('--accent-d',c.d);r.setProperty('--accent-bg',c.bg);r.setProperty('--accent-border',c.bg.replace('0.10','0.30'));var bt=lum(color)>0.35?'#111827':'#ffffff';r.setProperty('--btn-text',bt);document.querySelectorAll('.btn.primary').forEach(function(b){b.style.color=bt;});cfg.accent=color;document.querySelectorAll('#colorSwatches .color-swatch').forEach(function(el){el.classList.toggle('active',el.dataset.color===color);});}
-function selectColor(el){applyAccent(el.dataset.color);updateMoedaPreview();}
-function applyBg(bg,s,s2,isLight){var r=document.documentElement.style;r.setProperty('--bg',bg);r.setProperty('--surface',s);r.setProperty('--surface2',s2);if(isLight){r.setProperty('--text','#1a1a2e');r.setProperty('--muted','#64748b');r.setProperty('--border','rgba(0,0,0,0.09)');r.setProperty('--border2','rgba(0,0,0,0.16)');r.setProperty('--row-hover','rgba(0,0,0,0.03)');document.querySelectorAll('.sidebar-logo img').forEach(function(i){i.style.mixBlendMode='multiply';});}else{r.setProperty('--text','#e8eaf0');r.setProperty('--muted','#7a8099');r.setProperty('--border','rgba(255,255,255,0.07)');r.setProperty('--border2','rgba(255,255,255,0.13)');r.setProperty('--row-hover','rgba(255,255,255,0.02)');document.querySelectorAll('.sidebar-logo img').forEach(function(i){i.style.mixBlendMode='screen';});}cfg.bgPreset=bg;cfg.bgIsLight=!!isLight;document.querySelectorAll('#bgSwatches .bg-swatch').forEach(function(el){el.classList.toggle('active',el.dataset.bg===bg);});if(cfg.accent)applyAccent(cfg.accent);}
-function selectBg(el){applyBg(el.dataset.bg,el.dataset.s,el.dataset.s2,el.dataset.light==='1');}
-function selectMoeda(el){document.querySelectorAll('.moeda-btn').forEach(function(b){b.classList.remove('active');});el.classList.add('active');cfg.moeda=el.dataset.moeda;cfg.moedaLocale=el.dataset.locale;updateMoedaPreview();render();}
-function updateMoedaPreview(){document.getElementById('moedaPreview').textContent=(cfg.moeda||'R$')+'\u00a0'+(1234.56).toLocaleString(cfg.moedaLocale||'pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function applyAllPrefs(){if(cfg.bgPreset){var sw=document.querySelector('#bgSwatches [data-bg="'+cfg.bgPreset+'"]');if(sw)applyBg(cfg.bgPreset,sw.dataset.s,sw.dataset.s2,sw.dataset.light==='1');}if(cfg.accent)applyAccent(cfg.accent);if(cfg.moeda){var mb=document.querySelector('.moeda-btn[data-moeda="'+cfg.moeda+'"]');if(mb){document.querySelectorAll('.moeda-btn').forEach(function(b){b.classList.remove('active');});mb.classList.add('active');}}updateMoedaPreview();}
-
-// ── GRAFICOS ───────────────────────────────────────────────────
-function cv(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim();}
-function drawBar(id,labels,datasets){var el=document.getElementById(id);if(!el)return;var dpr=window.devicePixelRatio||1,W=el.parentElement.clientWidth||500,H=220;el.width=W*dpr;el.height=H*dpr;el.style.width=W+'px';el.style.height=H+'px';var ctx=el.getContext('2d');ctx.scale(dpr,dpr);var p={t:16,r:16,b:36,l:44},cW=W-p.l-p.r,cH=H-p.t-p.b,maxV=1;datasets.forEach(function(ds){ds.data.forEach(function(v){if(v>maxV)maxV=v;});});var mc=cv('--muted'),bc=cv('--border');ctx.strokeStyle=bc;ctx.lineWidth=1;for(var g=0;g<=4;g++){var y=p.t+cH-(g/4)*cH;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(p.l+cW,y);ctx.stroke();ctx.fillStyle=mc;ctx.font='10px DM Sans,sans-serif';ctx.textAlign='right';ctx.fillText(Math.round(maxV*g/4),p.l-5,y+4);}var nG=labels.length,nD=datasets.length,gW=cW/nG,bW=Math.min(gW*.35,20);datasets.forEach(function(ds,di){ctx.fillStyle=ds.color;labels.forEach(function(_,gi){var v=ds.data[gi]||0,bh=(v/maxV)*cH,x=p.l+gi*gW+gW/2-(nD*bW+(nD-1)*3)/2+di*(bW+3),y=p.t+cH-bh;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x,y,bW,bh,3);else ctx.rect(x,y,bW,bh);ctx.fill();});});ctx.fillStyle=mc;ctx.textAlign='center';ctx.font='10px DM Sans,sans-serif';labels.forEach(function(l,gi){ctx.fillText(l,p.l+gi*gW+gW/2,H-p.b+14);});}
-function drawLine(id,labels,data,color){var el=document.getElementById(id);if(!el)return;var dpr=window.devicePixelRatio||1,W=el.parentElement.clientWidth||500,H=200;el.width=W*dpr;el.height=H*dpr;el.style.width=W+'px';el.style.height=H+'px';var ctx=el.getContext('2d');ctx.scale(dpr,dpr);var p={t:16,r:16,b:36,l:62},cW=W-p.l-p.r,cH=H-p.t-p.b,maxV=Math.max.apply(null,data)||1;var mc=cv('--muted'),bc=cv('--border'),sf=cv('--surface');ctx.strokeStyle=bc;ctx.lineWidth=1;for(var g=0;g<=4;g++){var y=p.t+cH-(g/4)*cH,v=maxV*g/4;ctx.beginPath();ctx.moveTo(p.l,y);ctx.lineTo(p.l+cW,y);ctx.stroke();ctx.fillStyle=mc;ctx.font='10px DM Sans,sans-serif';ctx.textAlign='right';ctx.fillText(v>=1000?(v/1000).toFixed(1)+'k':Math.round(v),p.l-5,y+4);}if(data.length<2)return;var pts=data.map(function(v,i){return{x:p.l+i*(cW/(data.length-1)),y:p.t+cH-(v/maxV)*cH};});var grad=ctx.createLinearGradient(0,p.t,0,p.t+cH);grad.addColorStop(0,color+'44');grad.addColorStop(1,color+'00');ctx.beginPath();ctx.moveTo(pts[0].x,p.t+cH);pts.forEach(function(pt){ctx.lineTo(pt.x,pt.y);});ctx.lineTo(pts[pts.length-1].x,p.t+cH);ctx.closePath();ctx.fillStyle=grad;ctx.fill();ctx.beginPath();ctx.moveTo(pts[0].x,pts[0].y);for(var i=1;i<pts.length;i++){var cp1x=pts[i-1].x+(pts[i].x-pts[i-1].x)/3,cp2x=pts[i].x-(pts[i].x-pts[i-1].x)/3;ctx.bezierCurveTo(cp1x,pts[i-1].y,cp2x,pts[i].y,pts[i].x,pts[i].y);}ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();pts.forEach(function(pt){ctx.beginPath();ctx.arc(pt.x,pt.y,4,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle=sf;ctx.lineWidth=2;ctx.stroke();});ctx.fillStyle=mc;ctx.textAlign='center';ctx.font='10px DM Sans,sans-serif';labels.forEach(function(l,i){ctx.fillText(l,p.l+i*(cW/(labels.length-1)),H-p.b+14);});}
-
-function renderRelatorios(){
-  var meses=parseInt(document.getElementById('relPeriodo').value)||6;
-  var now=new Date(),labels=[],entradas=[],saidas=[],valorMes=[];
-  for(var i=meses-1;i>=0;i--){var d=new Date(now.getFullYear(),now.getMonth()-i,1),m=d.getMonth(),y=d.getFullYear();labels.push(MONTHS[m].substring(0,3)+'/'+String(y).slice(2));var mv=movements.filter(function(x){var md=new Date(x.date);return md.getMonth()===m&&md.getFullYear()===y;});entradas.push(mv.filter(function(x){return x.type==='in';}).reduce(function(a,x){return a+(Number(x.qty)||0);},0));saidas.push(mv.filter(function(x){return x.type==='out';}).reduce(function(a,x){return a+(Number(x.qty)||0);},0));var fut=movements.filter(function(x){var md=new Date(x.date);return md>new Date(y,m+1,0);});var off=fut.reduce(function(a,x){var pp=products.find(function(z){return z.id===x.prod_id;})||{};var c=Number(pp.cost)||0;return x.type==='in'?a+Number(x.qty)*c:x.type==='out'?a-Number(x.qty)*c:a;},0);var tot=products.reduce(function(a,pp){return a+(Number(pp.qty)||0)*(Number(pp.cost)||0);},0);valorMes.push(Math.max(0,tot-off));}
-  var tIn=entradas[entradas.length-1]||0,pIn=entradas[entradas.length-2]||0;
-  var tOut=saidas[saidas.length-1]||0,pOut=saidas[saidas.length-2]||0;
-  var tVal=valorMes[valorMes.length-1]||0,pVal=valorMes[valorMes.length-2]||0;
-  function dH(c,pv){if(!pv)return '<div class="stat-card-delta neutral">sem dados anteriores</div>';var pct=((c-pv)/Math.abs(pv)*100).toFixed(1);var cl=c>=pv?'up':'down';return '<div class="stat-card-delta '+cl+'">'+(c>=pv?'\u25b2':'\u25bc')+' '+Math.abs(pct)+'% vs m\u00eas ant.</div>';}
-  document.getElementById('relComparativo').innerHTML='<div class="stat-card"><div class="stat-card-label">Entradas este m\u00eas</div><div class="stat-card-value" style="color:var(--green)">'+tIn+'</div>'+dH(tIn,pIn)+'</div><div class="stat-card"><div class="stat-card-label">Sa\u00eddas este m\u00eas</div><div class="stat-card-value" style="color:var(--red)">'+tOut+'</div>'+dH(tOut,pOut)+'</div><div class="stat-card"><div class="stat-card-label">Valor em estoque</div><div class="stat-card-value" style="color:var(--accent);font-size:18px">'+fmtMoeda(tVal)+'</div>'+dH(tVal,pVal)+'</div><div class="stat-card"><div class="stat-card-label">Saldo do m\u00eas</div><div class="stat-card-value" style="color:'+(tIn>=tOut?'var(--green)':'var(--red)')+';">'+(tIn-tOut>=0?'+':'')+(tIn-tOut)+'</div><div class="stat-card-delta neutral">unidades</div></div>';
-  setTimeout(function(){drawBar('chartBarras',labels,[{data:entradas,color:cv('--green')||'#30c97e'},{data:saidas,color:cv('--red')||'#f05252'}]);drawLine('chartLinha',labels,valorMes,cv('--accent')||'#4f7fff');renderRuptura(meses);},30);
-}
-function renderRuptura(meses){
-  var now=new Date();
-  var rows=products.map(function(p){var qty=Number(p.qty)||0;var s=movements.filter(function(m){if(m.prod_id!==p.id||m.type!=='out')return false;var d=new Date(m.date);return d>=new Date(now.getFullYear(),now.getMonth()-meses,1);}).reduce(function(a,m){return a+(Number(m.qty)||0);},0);var sm=s/meses,dias=sm>0?Math.round(qty/(sm/30)):Infinity;return{p:p,qty:qty,saidaMes:sm.toFixed(1),dias:dias};}).sort(function(a,b){return a.dias-b.dias;});
-  document.getElementById('rupturaBody').innerHTML=rows.map(function(r){var dt,cb,pct,st;if(r.dias===Infinity){dt='Sem sa\u00eddas';cb='var(--green)';pct=100;st='<span class="badge ok">Est\u00e1vel</span>';}else if(r.dias<=7){dt='<strong style="color:var(--red)">'+r.dias+' dias</strong>';cb='var(--red)';pct=Math.min(100,r.dias/90*100);st='<span class="badge out">Cr\u00edtico</span>';}else if(r.dias<=30){dt='<strong style="color:var(--amber)">'+r.dias+' dias</strong>';cb='var(--amber)';pct=Math.min(100,r.dias/90*100);st='<span class="badge low">Aten\u00e7\u00e3o</span>';}else{dt=r.dias+' dias';cb='var(--green)';pct=Math.min(100,r.dias/90*100);st='<span class="badge ok">Normal</span>';}return '<tr><td><div class="prod-name">'+r.p.name+'</div><div class="prod-cat">'+(r.p.cat||'\u2014')+'</div></td><td style="text-align:center;font-weight:600">'+r.qty+'</td><td style="text-align:center;color:var(--muted)">'+r.saidaMes+'/m\u00eas</td><td><div class="ruptura-bar-wrap"><div class="ruptura-bar" style="width:'+pct+'%;background:'+cb+'"></div></div>'+dt+'</td><td>'+st+'</td></tr>';}).join('');
-}
-
-// ── EXPORTAR PDF ───────────────────────────────────────────────
-function openExport(){populateExportDates();exportType='week';['week','month','year','all'].forEach(function(t){document.getElementById('ec-'+t).classList.remove('sel');});document.getElementById('ec-week').classList.add('sel');updateExportFields();openModal('exportModal');}
-function selExport(t){exportType=t;['week','month','year','all'].forEach(function(x){document.getElementById('ec-'+x).classList.remove('sel');});document.getElementById('ec-'+t).classList.add('sel');updateExportFields();}
-function populateExportDates(){var now=new Date();var yr=document.getElementById('expYear');yr.innerHTML='';for(var y=now.getFullYear();y>=now.getFullYear()-4;y--)yr.innerHTML+='<option value="'+y+'">'+y+'</option>';var mo=document.getElementById('expMonth');mo.innerHTML='';MONTHS.forEach(function(m,i){mo.innerHTML+='<option value="'+(i+1)+'"'+(i===now.getMonth()?' selected':'')+'>'+m+'</option>';});populateWeeks();yr.onchange=mo.onchange=populateWeeks;}
-function populateWeeks(){var yr=parseInt(document.getElementById('expYear').value),mo=parseInt(document.getElementById('expMonth').value);var wk=document.getElementById('expWeek');wk.innerHTML='';var d=new Date(yr,mo-1,1),w=1;while(d.getMonth()===mo-1){var end=new Date(d);end.setDate(end.getDate()+6);if(end.getMonth()!==mo-1)end.setDate(new Date(yr,mo,0).getDate());wk.innerHTML+='<option value="'+w+'">Semana '+w+' ('+d.getDate().toString().padStart(2,'0')+'/'+mo.toString().padStart(2,'0')+' \u2013 '+end.getDate().toString().padStart(2,'0')+'/'+mo.toString().padStart(2,'0')+')</option>';d.setDate(d.getDate()+7);w++;}}
-function updateExportFields(){var row=document.getElementById('exportDateRow');if(exportType==='all'){row.style.display='none';return;}row.style.display='flex';document.getElementById('expYear').style.display='block';document.getElementById('expMonth').style.display=exportType==='year'?'none':'block';document.getElementById('expWeek').style.display=exportType==='week'?'block':'none';}
-function doExport(){
-  var yr=parseInt(document.getElementById('expYear').value),mo=parseInt(document.getElementById('expMonth').value),wkIdx=parseInt(document.getElementById('expWeek').value)||1;
-  var now=new Date(),title='',fm=movements.slice();
-  if(exportType==='week'){var ws=new Date(yr,mo-1,1+(wkIdx-1)*7),we=new Date(ws);we.setDate(we.getDate()+6);title='Semana '+wkIdx+' \u2014 '+MONTHS[mo-1]+' '+yr;fm=movements.filter(function(m){var d=new Date(m.date);return d>=ws&&d<=we;});}
-  else if(exportType==='month'){title=MONTHS[mo-1]+' '+yr;fm=movements.filter(function(m){var d=new Date(m.date);return d.getFullYear()===yr&&d.getMonth()===mo-1;});}
-  else if(exportType==='year'){title='Ano '+yr;fm=movements.filter(function(m){return new Date(m.date).getFullYear()===yr;});}
-  else title='Relat\u00f3rio completo';
-  var val=products.reduce(function(a,p){return a+(Number(p.qty)||0)*(Number(p.cost)||0);},0);
-  var ms={};fm.forEach(function(m){if(!ms[m.prod_id])ms[m.prod_id]={i:0,o:0};if(m.type==='in')ms[m.prod_id].i+=Number(m.qty)||0;if(m.type==='out')ms[m.prod_id].o+=Number(m.qty)||0;});
-  var rows=products.map(function(p){var s=getStatus(p),mv=ms[p.id]||{i:0,o:0},bg=s==='ok'?'#e6f7ef':s==='low'?'#fef3e2':'#fdecea',fg=s==='ok'?'#1a7f4e':s==='low'?'#92540a':'#9b2626';return '<tr style="border-bottom:1px solid #eee"><td style="padding:9px 12px;font-weight:500">'+p.name+'</td><td style="padding:9px 12px;color:#666">'+(p.cat||'\u2014')+'</td><td style="padding:9px 12px;text-align:center;font-weight:600">'+(Number(p.qty)||0)+'</td><td style="padding:9px 12px;text-align:center;color:#999">'+(Number(p.min)||0)+'</td><td style="padding:9px 12px;text-align:right;font-family:monospace">'+fmtMoeda(Number(p.cost)||0)+'</td><td style="padding:9px 12px;text-align:right;font-family:monospace;font-weight:600">'+fmtMoeda((Number(p.qty)||0)*(Number(p.cost)||0))+'</td><td style="padding:9px 12px;text-align:center;color:#1a7f4e;font-weight:500">+'+mv.i+'</td><td style="padding:9px 12px;text-align:center;color:#9b2626;font-weight:500">\u2212'+mv.o+'</td><td style="padding:9px 12px"><span style="background:'+bg+';color:'+fg+';padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600">'+statusLabel(s)+'</span></td></tr>';}).join('');
-  var cnpjH=cfg.cnpj?'<div style="font-size:11px;color:#888">CNPJ: '+cfg.cnpj+'</div>':'';
-  var respH=cfg.responsavel?'<div style="font-size:11px;color:#888">Resp.: '+cfg.responsavel+'</div>':'';
-  var pdfHtml='<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>'+cfg.empresa+'</title><style>body{font-family:Arial,sans-serif;margin:40px;color:#1a1a2e;font-size:13px}.hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #4f7fff}.cn{font-size:20px;font-weight:700}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}.kpi{background:#f7f8fc;border-radius:8px;padding:14px 16px;border-left:3px solid #4f7fff}.kl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#888;margin-bottom:6px}.kv{font-size:20px;font-weight:700}table{width:100%;border-collapse:collapse}th{background:#f0f2f8;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:#888;padding:10px 12px;text-align:left;border-bottom:2px solid #e0e4f0}.ftr{margin-top:28px;font-size:11px;color:#bbb;border-top:1px solid #eee;padding-top:12px;display:flex;justify-content:space-between}@media print{body{margin:20mm}}</style></head><body>'+
-    '<div class="hdr"><div><div class="cn">'+cfg.empresa+'</div>'+cnpjH+respH+'</div><div style="text-align:right"><div style="font-size:14px;font-weight:600;color:#4f7fff">'+title+'</div><div style="font-size:11px;color:#999;margin-top:4px">Gerado em '+now.toLocaleDateString('pt-BR')+' \u00e0s '+now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</div></div></div>'+
-    '<div class="kpis"><div class="kpi"><div class="kl">Produtos</div><div class="kv">'+products.length+'</div></div><div class="kpi" style="border-color:#30c97e"><div class="kl">Valor em estoque</div><div class="kv" style="font-size:15px">'+fmtMoeda(val)+'</div></div><div class="kpi" style="border-color:#f5a623"><div class="kl">Entradas</div><div class="kv">'+fm.filter(function(m){return m.type==='in';}).length+'</div></div><div class="kpi" style="border-color:#f05252"><div class="kl">Sa\u00eddas</div><div class="kv">'+fm.filter(function(m){return m.type==='out';}).length+'</div></div></div>'+
-    '<table><thead><tr><th>Produto</th><th>Categoria</th><th style="text-align:center">Qtd.</th><th style="text-align:center">M\u00edn.</th><th style="text-align:right">Custo unit.</th><th style="text-align:right">Valor total</th><th style="text-align:center">Entradas</th><th style="text-align:center">Sa\u00eddas</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table>'+
-    '<div class="ftr"><span>'+cfg.empresa+' \u2014 Gest\u00e3o de Estoque</span><span>'+products.length+' produto(s) | '+fmtMoeda(val)+'</span></div>'+
-    '<'+'script>window.onload=function(){setTimeout(function(){window.print();},500);};<'+'/script></body></html>';
-  var w=window.open('','_blank');if(w){w.document.write(pdfHtml);w.document.close();}
-  closeModal('exportModal');
-}
-
-// ── HELPERS ────────────────────────────────────────────────────
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-document.addEventListener('click',function(e){['prodModal','movModal','exportModal','delModal'].forEach(function(id){if(e.target===document.getElementById(id))closeModal(id);});});
-document.addEventListener('keydown',function(e){
-  if(e.key==='Escape'){['prodModal','movModal','exportModal','delModal'].forEach(closeModal);return;}
-  if(e.key==='Enter'&&!e.shiftKey){var tag=document.activeElement.tagName;if(tag==='TEXTAREA'||tag==='BUTTON'||tag==='SELECT')return;if(document.getElementById('prodModal').classList.contains('open')){e.preventDefault();saveProd();return;}if(document.getElementById('movModal').classList.contains('open')){e.preventDefault();saveMovement();return;}if(document.getElementById('delModal').classList.contains('open')){e.preventDefault();confirmDel();return;}}
-});
-
-
-
-
-// ── INIT ───────────────────────────────────────────────────────
-document.getElementById('currentDate').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-loadConfig();
-applyAllPrefs();
-loadData();
-
-</script>
+<?!= include('Codigo_js') ?>
 </body>
 </html>
